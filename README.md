@@ -1,4 +1,4 @@
-# Elf Economy Tycoon
+# Santa's Little Hustlers
 
 A Christmas-themed tycoon game where you manage Santa's workshop! Collect coins, build toy-making machines, and expand your festive operation.
 
@@ -104,7 +104,7 @@ bun run build
 ## Project Structure
 
 ```
-elf_economy/
+santas-little-hustlers/
 ├── src/
 │   ├── main.ts                      # Game entry point
 │   ├── scenes/
@@ -187,4 +187,4 @@ The game has an AudioManager ready for sounds. To add audio:
 - **Vite** - Fast build tool and dev server
 - **Bun** - Fast JavaScript runtime and package manager
 
-Enjoy building your elf empire!
+Enjoy building your elf empire! 🎄💰
