@@ -110,14 +110,15 @@ export class GridSystem {
   updateDrag(pointer: Phaser.Input.Pointer) {
     if (!this.draggedBuilding) return;
     
-    const newX = pointer.x - this.dragOffset.x;
-    const newY = pointer.y - this.dragOffset.y;
+    const rawX = pointer.x - this.dragOffset.x;
+    const rawY = pointer.y - this.dragOffset.y;
+    const clamped = this.clampToBounds(rawX, rawY);
     
-    this.draggedBuilding.x = newX;
-    this.draggedBuilding.y = newY;
+    this.draggedBuilding.x = clamped.x;
+    this.draggedBuilding.y = clamped.y;
     
     // Show placement preview
-    this.showPlacementPreview(newX, newY);
+    this.showPlacementPreview(clamped.x, clamped.y);
   }
 
   endDrag() {
@@ -182,13 +183,27 @@ export class GridSystem {
       }
     }
   }
-
-  private worldToGrid(worldX: number, worldY: number): { x: number; y: number } {
+ 
+  private clampToBounds(x: number, y: number): { x: number; y: number } {
+    const minX = this.cellSize / 2;
+    const maxX = (this.gridWidth * this.cellSize) - (this.cellSize / 2);
+    const minY = this.cellSize / 2;
+    const maxY = (this.gridHeight * this.cellSize) - (this.cellSize / 2);
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
     return {
-      x: Math.floor(worldX / this.cellSize),
-      y: Math.floor(worldY / this.cellSize)
+      x: clamp(x, minX, maxX),
+      y: clamp(y, minY, maxY)
     };
   }
+ 
+  private worldToGrid(worldX: number, worldY: number): { x: number; y: number } {
+    const clamped = this.clampToBounds(worldX, worldY);
+    return {
+      x: Math.floor(clamped.x / this.cellSize),
+      y: Math.floor(clamped.y / this.cellSize)
+    };
+  }
+
 
   private isValidPosition(gridX: number, gridY: number): boolean {
     return this.isValidGridPosition(gridX, gridY) && !this.grid[gridY][gridX].occupied;
