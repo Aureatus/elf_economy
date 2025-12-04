@@ -407,12 +407,13 @@ export class Building {
 
   getUpgradeCost(): number {
     const data = BUILDING_DATA[this.type];
-    return Math.floor(data.baseCost * Math.pow(2, this.level));
+    return Math.floor(data.baseCost * Math.pow(2.2, this.level));
+  }
+ 
+  getRepairCost(): number {
+    return Math.floor(BUILDING_DATA[this.type].baseCost * 1.15);
   }
 
-  getRepairCost(): number {
-    return BUILDING_DATA[this.type].baseCost;
-  }
 
   upgrade() {
     if (this.state !== BuildingState.ACTIVE) return;

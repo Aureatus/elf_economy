@@ -4,12 +4,15 @@ export class EconomySystem {
   private coins: number;
   private totalEarned: number;
   private buildings: Building[];
-
-  constructor(initialCoins: number = 0) {
+  private passiveIncomeModifier: number;
+ 
+  constructor(initialCoins: number = 0, passiveIncomeModifier: number = 0.85) {
     this.coins = initialCoins;
     this.totalEarned = 0;
     this.buildings = [];
+    this.passiveIncomeModifier = passiveIncomeModifier;
   }
+
 
   addCoins(amount: number) {
     this.coins += amount;
@@ -56,7 +59,8 @@ export class EconomySystem {
 
   processIncome() {
     const income = this.calculateIncome();
-    this.addCoins(income);
-    return income;
+    const adjustedIncome = Math.floor(income * this.passiveIncomeModifier);
+    this.addCoins(adjustedIncome);
+    return adjustedIncome;
   }
 }

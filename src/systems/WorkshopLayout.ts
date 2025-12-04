@@ -46,19 +46,19 @@ export class WorkshopLayout {
 
   // Left side - Tree planting area (6 spots)
   // Trees give active income but require clicking
-  // Each tree gives 6 coins per shake (2 coins × 3 value, 20s cooldown)
+  // Each tree gives 2 coins worth 1 each per shake (base 2s cooldown before research)
   static readonly TREE_SPOTS: TreeSpot[] = [
     // Starter tree (free/pre-planted)
     { id: 'tree_1', x: 200, y: 300, unlockOrder: 1, planted: true, cost: 0 },
     
     // Purchasable trees - need multiple shakes to afford next tree
-    // Start: 50 coins, each shake: +6 coins (2 drops × 3 value, 20s cooldown)
-    // Need ~3 shakes (1 min) to afford tree 2
-    { id: 'tree_2', x: 200, y: 450, unlockOrder: 2, planted: false, cost: 70 },
-    { id: 'tree_3', x: 350, y: 250, unlockOrder: 3, planted: false, cost: 150 },
-    { id: 'tree_4', x: 350, y: 400, unlockOrder: 4, planted: false, cost: 300 },
-    { id: 'tree_5', x: 200, y: 600, unlockOrder: 5, planted: false, cost: 600 },
-    { id: 'tree_6', x: 350, y: 550, unlockOrder: 6, planted: false, cost: 1200 },
+    // Start: 0 coins, each shake: +2 coins (before research/buffs)
+    // Need more sustained shaking to afford tree 2
+    { id: 'tree_2', x: 200, y: 450, unlockOrder: 2, planted: false, cost: 110 },
+    { id: 'tree_3', x: 350, y: 250, unlockOrder: 3, planted: false, cost: 220 },
+    { id: 'tree_4', x: 350, y: 400, unlockOrder: 4, planted: false, cost: 420 },
+    { id: 'tree_5', x: 200, y: 600, unlockOrder: 5, planted: false, cost: 820 },
+    { id: 'tree_6', x: 350, y: 550, unlockOrder: 6, planted: false, cost: 1600 },
   ];
 
   static getInitialBuildingSpots(): BuildingSpot[] {
