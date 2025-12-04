@@ -9,9 +9,13 @@ import { AudioManager } from '../utils/AudioManager';
 import { UIManager } from '../ui/UIManager';
 import { BuildingInfoPanel } from '../ui/BuildingInfoPanel';
 import { ResearchPanel } from '../ui/ResearchPanel';
+import { CookieShop } from '../ui/CookieShop';
 import { EconomySystem } from '../systems/EconomySystem';
 import { WorkshopLayout, BuildingSpot, TreeSpot } from '../systems/WorkshopLayout';
 import { ResearchSystem } from '../systems/ResearchSystem';
+import { BuffSystem, BuffType } from '../systems/BuffSystem';
+import { GridSystem } from '../systems/GridSystem';
+import { DecorationSystem } from '../systems/DecorationSystem';
 import { AssetCreator } from '../utils/AssetCreator';
 import { EnvironmentRenderer } from '../rendering/EnvironmentRenderer';
 
@@ -24,6 +28,9 @@ export class GameScene extends Phaser.Scene {
   private economy!: EconomySystem;
   private audioManager!: AudioManager;
   private researchSystem!: ResearchSystem;
+  private buffSystem!: BuffSystem;
+  private gridSystem!: GridSystem;
+  private decorationSystem!: DecorationSystem;
   
   // Buildings
   private buildingSpots: BuildingSpot[] = [];
@@ -39,6 +46,7 @@ export class GameScene extends Phaser.Scene {
   private uiManager!: UIManager;
   private buildingInfoPanel!: BuildingInfoPanel;
   private researchPanel!: ResearchPanel;
+  private cookieShop!: CookieShop;
   
   // Collectibles
   private coinGroup!: Phaser.Physics.Arcade.Group;
@@ -61,6 +69,12 @@ export class GameScene extends Phaser.Scene {
     this.economy = new EconomySystem(50);
     this.audioManager = new AudioManager(this);
     this.researchSystem = new ResearchSystem();
+    this.buffSystem = new BuffSystem(this);
+    this.gridSystem = new GridSystem(this, 1200, 768); // Game world size
+    this.decorationSystem = new DecorationSystem(this);
+    
+    // Initialize audio
+    this.audioManager.playBackgroundMusic();
     console.log('GameScene: Systems initialized');
     
     // Render environment
@@ -82,6 +96,7 @@ export class GameScene extends Phaser.Scene {
     
     // Setup controls
     this.setupControls();
+    this.setupDragAndDrop();
     
     // Create coin group for collectibles
     this.coinGroup = this.physics.add.group({
@@ -121,6 +136,13 @@ export class GameScene extends Phaser.Scene {
       () => this.onResearchPanelClosed()
     );
     
+    this.cookieShop = new CookieShop(
+      this,
+      this.buffSystem,
+      (type, cost) => this.onCookiePurchased(type, cost),
+      () => this.onCookieShopClosed()
+    );
+    
     // Create trees and planting spots
     this.createTrees();
     
@@ -132,6 +154,7 @@ export class GameScene extends Phaser.Scene {
     this.player.update(this.cursors, this.wasd);
     this.buildings.forEach(building => building.update());
     this.trees.forEach(tree => tree.update(delta));
+    this.buffSystem.update();
   }
 
   private createTrees() {
@@ -242,10 +265,15 @@ export class GameScene extends Phaser.Scene {
         building.getSprite().on('pointerdown', () => {
           if (building.getType() === BuildingType.RESEARCH_LAB) {
             this.openResearchPanel();
+          } else if (building.getType() === BuildingType.COOKIE_BAKERY) {
+            this.openCookieShop();
           } else {
             this.buildingInfoPanel.show(building);
           }
         });
+        
+        // Add to grid
+        this.gridSystem.addBuilding(building);
         this.economy.addBuilding(building);
       } else {
         // For broken buildings, set click handler on the repair button
@@ -286,6 +314,7 @@ export class GameScene extends Phaser.Scene {
       'REPAIRED!',
       '#ffd700'
     );
+    this.audioManager.playBuildingRepairSound();
   }
 
   private startGameLoops() {
@@ -319,8 +348,31 @@ export class GameScene extends Phaser.Scene {
           this.researchSystem.addResearchPoints(1);
           this.uiManager.showFloatingText(building.x, building.y, '+1 RP', '#00ffff');
         } else {
-          // Generate regular coins
-          this.spawnCoinAt(building.x, building.y);
+          // Generate regular coins with production boost and value multipliers
+          const baseIncome = building.getIncome();
+          const productionMultiplier = this.researchSystem.getProductionSpeedMultiplier() * this.buffSystem.getMultiplier(BuffType.PRODUCTION_BOOST);
+          const valueMultiplier = this.researchSystem.getCoinValueMultiplier();
+          const efficiencyMultiplier = this.researchSystem.getBuildingEfficiencyMultiplier();
+          const decorationMultiplier = 1 + this.decorationSystem.getTotalBonus();
+          const adjustedIncome = Math.floor(baseIncome * productionMultiplier * valueMultiplier * efficiencyMultiplier * decorationMultiplier);
+          
+          // Special handling for Gift Wrapping Station
+          if (building.getType() === BuildingType.GIFT_WRAPPING_STATION) {
+            // Gift Wrapping Station adds bonus to ALL coins collected
+            this.spawnCoinAt(building.x, building.y, adjustedIncome);
+          } else {
+            // Spawn multiple coins for higher income
+            const coinValue = Math.max(10, Math.floor(adjustedIncome / 5)); // Minimum 10, split into ~5 coins
+            const coinCount = Math.ceil(adjustedIncome / coinValue);
+            
+            for (let i = 0; i < coinCount; i++) {
+              const offsetX = Phaser.Math.Between(-30, 30);
+              const offsetY = Phaser.Math.Between(-20, 20);
+              this.time.delayedCall(i * 50, () => {
+                this.spawnCoinAt(building.x + offsetX, building.y + offsetY, coinValue);
+              });
+            }
+          }
         }
       }
     });
@@ -334,6 +386,7 @@ export class GameScene extends Phaser.Scene {
     building.upgrade();
     this.updateUI();
     this.uiManager.showFloatingText(building.x, building.y - 50, 'UPGRADED!', '#ffd700');
+    this.audioManager.playBuildingUpgradeSound();
   }
 
   private updateUI() {
@@ -375,12 +428,31 @@ export class GameScene extends Phaser.Scene {
     coin: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Tilemaps.Tile | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody
   ) {
     const coinObj = coin as unknown as Coin;
-    const value = coinObj.getValue();
-    console.log(`[GAME] Collecting coin worth ${value}`);
+    let value = coinObj.getValue();
+    
+    // Apply gift wrapping multiplier if station is active
+    const hasGiftWrapping = this.economy.getBuildings().some(b => 
+      b.getType() === BuildingType.GIFT_WRAPPING_STATION && b.isRepaired()
+    );
+    
+    if (hasGiftWrapping) {
+      value = Math.floor(value * this.researchSystem.getCoinValueMultiplier());
+    }
+    
+    // Apply reindeer stable collection bonus
+    const hasReindeerStables = this.economy.getBuildings().some(b => 
+      b.getType() === BuildingType.REINDEER_STABLES && b.isRepaired()
+    );
+    
+    if (hasReindeerStables) {
+      value = Math.floor(value * 1.5); // 50% collection bonus
+    }
+    
     coinObj.collect();
     this.economy.addCoins(value);
     this.uiManager.updateCoins(this.economy.getCoins());
     this.uiManager.showFloatingText(coinObj.x, coinObj.y, `+${value}`, '#ffd700');
+    this.audioManager.playCoinCollectSound();
     this.updateAffordabilityIndicators();
   }
 
@@ -408,6 +480,7 @@ export class GameScene extends Phaser.Scene {
           y: spot.y
         })),
       research: this.researchSystem.getSaveData(),
+      buffs: this.buffSystem.getSaveData(),
       totalEarned: this.economy.getTotalEarned(),
       lastSaveTime: Date.now()
     };
@@ -471,6 +544,11 @@ export class GameScene extends Phaser.Scene {
       if (saveData.research) {
         this.researchSystem.loadSaveData(saveData.research);
       }
+      
+      // Load buff data
+      if (saveData.buffs) {
+        this.buffSystem.loadSaveData(saveData.buffs);
+      }
       } catch (error) {
         console.error('Error loading save data, starting fresh:', error);
         // Clear corrupted save
@@ -530,5 +608,43 @@ export class GameScene extends Phaser.Scene {
 
   private openResearchPanel() {
     this.researchPanel.show();
+  }
+
+  private onCookiePurchased(type: 'basic' | 'chocolate' | 'gingerbread', cost: number) {
+    if (this.economy.spendCoins(cost)) {
+      this.buffSystem.consumeCookie(type);
+      this.updateUI();
+      this.uiManager.showFloatingText(512, 200, 'Cookie Fed!', '#8b4513');
+    }
+  }
+
+  private onCookieShopClosed() {
+    // Panel closed - no action needed
+  }
+
+  private openCookieShop() {
+    this.cookieShop.show(this.economy.getCoins());
+  }
+
+  private setupDragAndDrop() {
+    // Enable drag and drop for all repaired buildings
+    this.buildings.forEach(building => {
+      if (building.isRepaired()) {
+        const sprite = building.getSprite();
+        sprite.setInteractive({ draggable: true });
+        
+        sprite.on('dragstart', (pointer: Phaser.Input.Pointer) => {
+          this.gridSystem.startDrag(building, pointer);
+        });
+        
+        sprite.on('drag', (pointer: Phaser.Input.Pointer) => {
+          this.gridSystem.updateDrag(pointer);
+        });
+        
+        sprite.on('dragend', () => {
+          this.gridSystem.endDrag();
+        });
+      }
+    });
   }
 }

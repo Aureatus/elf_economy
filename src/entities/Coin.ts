@@ -99,19 +99,25 @@ export class Coin extends Phaser.Physics.Arcade.Sprite {
   }
 
   private createCollectionParticles() {
-    const particles = this.scene.add.particles(this.x, this.y, 'coin', {
-      speed: { min: 50, max: 100 },
+    // Enhanced collection particles based on coin value
+    const particleCount = Math.min(5 + Math.floor(this.value / 10), 15);
+    const colors = [0xffd700, 0xffa500, 0xff6347, 0x90EE90];
+    const color = colors[Math.floor(this.value / 25) % colors.length];
+    
+    const particles = this.scene.add.particles(this.x, this.y, 'star', {
+      speed: { min: 50, max: 150 },
       angle: { min: 0, max: 360 },
-      scale: { start: 0.5, end: 0 },
+      scale: { start: 0.3, end: 0 },
       alpha: { start: 1, end: 0 },
-      lifespan: 400,
-      quantity: 8,
+      lifespan: 600,
+      quantity: particleCount,
+      tint: color,
       blendMode: 'ADD'
     });
     
     particles.setDepth(15);
     
-    this.scene.time.delayedCall(400, () => {
+    this.scene.time.delayedCall(600, () => {
       particles.destroy();
     });
   }

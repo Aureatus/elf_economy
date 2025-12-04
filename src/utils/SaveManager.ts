@@ -13,6 +13,7 @@ export interface SaveData {
     y: number;
   }[];
   research?: any;
+  buffs?: any;
   totalEarned: number;
   lastSaveTime: number;
 }

@@ -11,7 +11,11 @@ export enum BuildingType {
   SNOWGLOBE_FACTORY = 'snowglobe_factory',
   ORNAMENT_WORKSHOP = 'ornament_workshop',
   SANTAS_OFFICE = 'santas_office',
-  RESEARCH_LAB = 'research_lab'
+  RESEARCH_LAB = 'research_lab',
+  COOKIE_BAKERY = 'cookie_bakery',
+  GIFT_WRAPPING_STATION = 'gift_wrapping_station',
+  ELF_DORMITORY = 'elf_dormitory',
+  REINDEER_STABLES = 'reindeer_stables'
 }
 
 export enum BuildingState {
@@ -104,6 +108,34 @@ export const BUILDING_DATA: Record<BuildingType, BuildingData> = {
     baseCost: 15000,
     baseIncome: 50,
     description: 'Unlocks permanent upgrades'
+  },
+  [BuildingType.COOKIE_BAKERY]: {
+    type: BuildingType.COOKIE_BAKERY,
+    name: 'Cookie Bakery',
+    baseCost: 8000,
+    baseIncome: 200,
+    description: 'Bakes cookies for elf productivity'
+  },
+  [BuildingType.GIFT_WRAPPING_STATION]: {
+    type: BuildingType.GIFT_WRAPPING_STATION,
+    name: 'Gift Wrapping Station',
+    baseCost: 12000,
+    baseIncome: 300,
+    description: 'Adds value to collected coins'
+  },
+  [BuildingType.ELF_DORMITORY]: {
+    type: BuildingType.ELF_DORMITORY,
+    name: 'Elf Dormitory',
+    baseCost: 20000,
+    baseIncome: 150,
+    description: 'Houses more productive elves'
+  },
+  [BuildingType.REINDEER_STABLES]: {
+    type: BuildingType.REINDEER_STABLES,
+    name: 'Reindeer Stables',
+    baseCost: 25000,
+    baseIncome: 400,
+    description: 'Faster coin collection and delivery'
   }
 };
 
@@ -122,6 +154,8 @@ export class Building {
   private incomeText?: Phaser.GameObjects.Text;
   private levelBadge?: Phaser.GameObjects.Container;
   private repairPrompt?: Phaser.GameObjects.Container;
+  private animationContainer?: Phaser.GameObjects.Container;
+  private productionParticles?: Phaser.GameObjects.Particles.ParticleEmitter;
   private onRepairClick?: () => void;
 
   constructor(
@@ -194,6 +228,9 @@ export class Building {
       repeat: -1,
       ease: 'Sine.inOut'
     });
+    
+    // Create production animations
+    this.createProductionAnimations();
 
     // Create income indicator
     this.createIncomeIndicator();
@@ -340,6 +377,30 @@ export class Building {
     });
   }
 
+  private createUpgradeParticles() {
+    // Enhanced upgrade particles based on building level
+    const particleCount = Math.min(10 + this.level * 2, 30);
+    const colors = [0xffd700, 0xff6347, 0x90EE90, 0x00ffff, 0xff69b4];
+    const color = colors[this.level % colors.length];
+    
+    const particles = this.scene.add.particles(this.x, this.y, 'star', {
+      speed: { min: 50, max: 150 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 1000,
+      quantity: particleCount,
+      tint: color,
+      blendMode: 'ADD'
+    });
+    
+    particles.setDepth(20);
+    
+    this.scene.time.delayedCall(1000, () => {
+      particles.destroy();
+    });
+  }
+
   update() {
     if (this.state !== BuildingState.ACTIVE) return;
     
@@ -463,10 +524,313 @@ export class Building {
     }
   }
 
+  private createProductionAnimations() {
+    if (this.state !== BuildingState.ACTIVE) return;
+    
+    this.animationContainer = this.scene.add.container(this.x, this.y);
+    this.animationContainer.setDepth(6);
+    
+    // Create different animations based on building type
+    switch (this.type) {
+      case BuildingType.TOY_MAKER:
+        this.createToyMakerAnimation();
+        break;
+      case BuildingType.GIFT_WRAPPER:
+        this.createGiftWrapperAnimation();
+        break;
+      case BuildingType.COOKIE_FACTORY:
+        this.createCookieFactoryAnimation();
+        break;
+      case BuildingType.ELF_HOUSE:
+        this.createElfHouseAnimation();
+        break;
+      case BuildingType.REINDEER_STABLE:
+        this.createReindeerStableAnimation();
+        break;
+      case BuildingType.CANDY_CANE_FORGE:
+        this.createCandyCaneAnimation();
+        break;
+      case BuildingType.STOCKING_STUFFER:
+        this.createStockingStufferAnimation();
+        break;
+      case BuildingType.SNOWGLOBE_FACTORY:
+        this.createSnowglobeAnimation();
+        break;
+      case BuildingType.ORNAMENT_WORKSHOP:
+        this.createOrnamentAnimation();
+        break;
+      case BuildingType.SANTAS_OFFICE:
+        this.createSantaOfficeAnimation();
+        break;
+      case BuildingType.RESEARCH_LAB:
+        this.createResearchLabAnimation();
+        break;
+      case BuildingType.COOKIE_BAKERY:
+        this.createCookieBakeryAnimation();
+        break;
+      case BuildingType.GIFT_WRAPPING_STATION:
+        this.createGiftWrappingAnimation();
+        break;
+      case BuildingType.ELF_DORMITORY:
+        this.createElfDormitoryAnimation();
+        break;
+      case BuildingType.REINDEER_STABLES:
+        this.createReindeerStablesAnimation();
+        break;
+    }
+  }
+
+  private createToyMakerAnimation() {
+    // Hammer animation
+    const hammer = this.scene.add.rectangle(-10, -20, 8, 15, 0x8b4513);
+    hammer.setOrigin(0.5);
+    this.animationContainer.add(hammer);
+    
+    this.scene.tweens.add({
+      targets: hammer,
+      y: -30,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createGiftWrapperAnimation() {
+    // Ribbon animation
+    const ribbon = this.scene.add.rectangle(0, -15, 20, 3, 0xff0000);
+    ribbon.setOrigin(0.5);
+    this.animationContainer.add(ribbon);
+    
+    this.scene.tweens.add({
+      targets: ribbon,
+      scaleX: 1.2,
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createCookieFactoryAnimation() {
+    // Steam animation
+    this.productionParticles = this.scene.add.particles(0, -10, 'steam', {
+      speed: { min: 20, max: 40 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 0.2, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      lifespan: 1000,
+      quantity: 1
+    });
+    this.productionParticles.setDepth(7);
+  }
+
+  private createElfHouseAnimation() {
+    // Window light animation
+    const windowLight = this.scene.add.circle(0, -10, 8, 0xffff00, 0.8);
+    windowLight.setOrigin(0.5);
+    this.animationContainer.add(windowLight);
+    
+    this.scene.tweens.add({
+      targets: windowLight,
+      alpha: 0.3,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createReindeerStableAnimation() {
+    // Reindeer antlers animation
+    const antlers = this.scene.add.rectangle(-5, -25, 3, 8, 0x8b4513);
+    antlers.setOrigin(0.5);
+    this.animationContainer.add(antlers);
+    
+    this.scene.tweens.add({
+      targets: antlers,
+      angle: 10,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createCandyCaneAnimation() {
+    // Sparkle animation
+    for (let i = 0; i < 3; i++) {
+      const sparkle = this.scene.add.circle(
+        Phaser.Math.Between(-15, 15),
+        -20,
+        2,
+        0xff0000
+      );
+      sparkle.setOrigin(0.5);
+      this.animationContainer.add(sparkle);
+      
+      this.scene.tweens.add({
+        targets: sparkle,
+        alpha: 0,
+        scale: 2,
+        duration: 1000,
+        delay: i * 300,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut'
+      });
+    }
+  }
+
+  private createStockingStufferAnimation() {
+    // Stuffing animation
+    const stuffing = this.scene.add.rectangle(0, -15, 12, 8, 0xff0000);
+    stuffing.setOrigin(0.5);
+    this.animationContainer.add(stuffing);
+    
+    this.scene.tweens.add({
+      targets: stuffing,
+      scaleY: 1.3,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createSnowglobeAnimation() {
+    // Snow inside globe
+    const snow = this.scene.add.circle(0, -10, 6, 0xffffff);
+    snow.setOrigin(0.5);
+    this.animationContainer.add(snow);
+    
+    this.scene.tweens.add({
+      targets: snow,
+      y: -5,
+      duration: 3000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createOrnamentAnimation() {
+    // Rotating ornament
+    const ornament = this.scene.add.circle(0, -15, 4, 0x69b4ff);
+    ornament.setOrigin(0.5);
+    this.animationContainer.add(ornament);
+    
+    this.scene.tweens.add({
+      targets: ornament,
+      angle: 360,
+      duration: 4000,
+      repeat: -1,
+      ease: 'Linear'
+    });
+  }
+
+  private createSantaOfficeAnimation() {
+    // Santa's hat bob
+    const hat = this.scene.add.rectangle(0, -30, 20, 10, 0xff0000);
+    hat.setOrigin(0.5);
+    this.animationContainer.add(hat);
+    
+    this.scene.tweens.add({
+      targets: hat,
+      y: -35,
+      duration: 2500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
+  private createResearchLabAnimation() {
+    // Bubbling beakers
+    for (let i = 0; i < 2; i++) {
+      const bubble = this.scene.add.circle(
+        Phaser.Math.Between(-10, 10),
+        -20,
+        3,
+        0x00ffff
+      );
+      bubble.setOrigin(0.5);
+      this.animationContainer.add(bubble);
+      
+      this.scene.tweens.add({
+        targets: bubble,
+        y: -30,
+        duration: 1500 + i * 500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut'
+      });
+    }
+  }
+
+  private createCookieBakeryAnimation() {
+    // Rising steam from oven
+    this.productionParticles = this.scene.add.particles(0, -10, 'steam', {
+      speed: { min: 30, max: 50 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 0.3, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 1200,
+      quantity: 2
+    });
+    this.productionParticles.setDepth(7);
+  }
+
+  private createGiftWrappingAnimation() {
+    // Moving conveyor belt
+    const belt = this.scene.add.rectangle(-15, -10, 30, 3, 0x654321);
+    belt.setOrigin(0.5);
+    this.animationContainer.add(belt);
+    
+    this.scene.tweens.add({
+      targets: belt,
+      x: 15,
+      duration: 2000,
+      repeat: -1,
+      ease: 'Linear'
+    });
+  }
+
+  private createElfDormitoryAnimation() {
+    // Chimney smoke
+    this.productionParticles = this.scene.add.particles(0, -25, 'smoke', {
+      speed: { min: 10, max: 20 },
+      angle: { min: 240, max: 300 },
+      scale: { start: 0.2, end: 0.5 },
+      alpha: { start: 0.6, end: 0 },
+      lifespan: 2000,
+      quantity: 1
+    });
+    this.productionParticles.setDepth(7);
+  }
+
+  private createReindeerStablesAnimation() {
+    // Reindeer movement
+    const reindeer = this.scene.add.rectangle(-10, -15, 20, 10, 0x8b4513);
+    reindeer.setOrigin(0.5);
+    this.animationContainer.add(reindeer);
+    
+    this.scene.tweens.add({
+      targets: reindeer,
+      x: 10,
+      duration: 3000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut'
+    });
+  }
+
   destroy() {
     if (this.incomeText) this.incomeText.destroy();
     if (this.levelBadge) this.levelBadge.destroy();
     if (this.repairPrompt) this.repairPrompt.destroy();
+    if (this.animationContainer) this.animationContainer.destroy();
+    if (this.productionParticles) this.productionParticles.destroy();
     if (this.sprite) this.sprite.destroy();
   }
 }

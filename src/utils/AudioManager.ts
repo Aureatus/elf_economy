@@ -8,6 +8,10 @@ export class AudioManager {
     this.scene = scene;
   }
 
+  playBackgroundMusic() {
+    this.playMusic('christmas_bg', true);
+  }
+
   playMusic(key: string, loop: boolean = true): void {
     if (this.bgMusic) {
       this.bgMusic.stop();
@@ -45,5 +49,34 @@ export class AudioManager {
 
   setSFXVolume(volume: number): void {
     this.sfxVolume = Phaser.Math.Clamp(volume, 0, 1);
+  }
+
+  // Enhanced sound effects
+  playCoinCollectSound() {
+    this.playSFX('coin_collect', 0.6);
+  }
+
+  playBuildingRepairSound() {
+    this.playSFX('building_repair', 0.7);
+  }
+
+  playBuildingUpgradeSound() {
+    this.playSFX('building_upgrade', 0.8);
+  }
+
+  playTreeShakeSound() {
+    this.playSFX('tree_shake', 0.5);
+  }
+
+  playUIClickSound() {
+    this.playSFX('ui_click', 0.4);
+  }
+
+  playResearchCompleteSound() {
+    this.playSFX('research_complete', 0.9);
+  }
+
+  playCookiePurchaseSound() {
+    this.playSFX('cookie_purchase', 0.6);
   }
 }

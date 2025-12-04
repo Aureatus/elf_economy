@@ -138,7 +138,7 @@ export class ChristmasTree {
     // Create particle effect
     this.createShakeParticles();
 
-    // Drop coins - just 2 coins per shake for slow progression
+// Drop coins - just 2 coins per shake for slow progression
     const coinCount = 2;
     console.log(`[TREE] Shaking tree, dropping ${coinCount} coins of ${this.coinValue} value each = ${coinCount * this.coinValue} total`);
     for (let i = 0; i < coinCount; i++) {
@@ -149,6 +149,23 @@ export class ChristmasTree {
         console.log(`[TREE] Dropping coin ${i+1} with value ${this.coinValue}`);
         this.onCoinDrop(this.x + offsetX, this.y + offsetY, this.coinValue);
       });
+    }
+    
+    // Visual feedback
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleX: 0.95,
+      scaleY: 1.05,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+      ease: 'Sine.inOut'
+    });
+    
+    // Play tree shake sound
+    if (this.scene && (this.scene as any).audioManager) {
+      (this.scene as any).audioManager.playTreeShakeSound();
+    }
     }
 
     // Visual feedback
@@ -163,7 +180,7 @@ export class ChristmasTree {
   }
 
   private createShakeParticles() {
-    // Snowflakes and leaves falling
+    // Enhanced snowflakes and magical particles
     const particles = this.scene.add.particles(this.x, this.y - 40, 'snowflake', {
       speed: { min: 50, max: 100 },
       angle: { min: 60, max: 120 },
@@ -174,10 +191,27 @@ export class ChristmasTree {
       gravityY: 200
     });
     
+    // Add magical sparkles
+    const sparkles = this.scene.add.particles(this.x, this.y - 40, 'star', {
+      speed: { min: 30, max: 80 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.2, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 800,
+      quantity: 8,
+      tint: 0x00ffff,
+      blendMode: 'ADD'
+    });
+    
     particles.setDepth(15);
+    sparkles.setDepth(16);
     
     this.scene.time.delayedCall(600, () => {
       particles.destroy();
+    });
+    
+    this.scene.time.delayedCall(800, () => {
+      sparkles.destroy();
     });
   }
 
@@ -217,6 +251,114 @@ export class ChristmasTree {
         }
       }
     }
+  }
+
+  private createShakeParticles() {
+    // Enhanced snowflakes and magical particles
+    const particles = this.scene.add.particles(this.x, this.y - 40, 'snowflake', {
+      speed: { min: 50, max: 100 },
+      angle: { min: 60, max: 120 },
+      scale: { start: 0.8, end: 0.3 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 600,
+      quantity: 15,
+      gravityY: 200
+    });
+    
+    // Add magical sparkles
+    const sparkles = this.scene.add.particles(this.x, this.y - 40, 'star', {
+      speed: { min: 30, max: 80 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.2, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 800,
+      quantity: 8,
+      tint: 0x00ffff,
+      blendMode: 'ADD'
+    });
+    
+    particles.setDepth(15);
+    sparkles.setDepth(16);
+    
+    this.scene.time.delayedCall(600, () => {
+      particles.destroy();
+    });
+    
+    this.scene.time.delayedCall(800, () => {
+      sparkles.destroy();
+    });
+  }
+
+  private createShakeParticles() {
+    // Enhanced snowflakes and magical particles
+    const particles = this.scene.add.particles(this.x, this.y - 40, 'snowflake', {
+      speed: { min: 50, max: 100 },
+      angle: { min: 60, max: 120 },
+      scale: { start: 0.8, end: 0.3 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 600,
+      quantity: 15,
+      gravityY: 200
+    });
+    
+    // Add magical sparkles
+    const sparkles = this.scene.add.particles(this.x, this.y - 40, 'star', {
+      speed: { min: 30, max: 80 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.2, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 800,
+      quantity: 8,
+      tint: 0x00ffff,
+      blendMode: 'ADD'
+    });
+    
+    particles.setDepth(15);
+    sparkles.setDepth(16);
+    
+    this.scene.time.delayedCall(600, () => {
+      particles.destroy();
+    });
+    
+    this.scene.time.delayedCall(800, () => {
+      sparkles.destroy();
+    });
+  }
+
+  private createShakeParticles() {
+    // Enhanced snowflakes and magical particles
+    const particles = this.scene.add.particles(this.x, this.y - 40, 'snowflake', {
+      speed: { min: 50, max: 100 },
+      angle: { min: 60, max: 120 },
+      scale: { start: 0.8, end: 0.3 },
+      alpha: { start: 1, end: 0 },
+      lifespan: 600,
+      quantity: 15,
+      gravityY: 200
+    });
+    
+    // Add magical sparkles
+    const sparkles = this.scene.add.particles(this.x, this.y - 40, 'star', {
+      speed: { min: 30, max: 80 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.2, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 800,
+      quantity: 8,
+      tint: 0x00ffff,
+      blendMode: 'ADD'
+    });
+    
+    particles.setDepth(15);
+    sparkles.setDepth(16);
+    
+    this.scene.time.delayedCall(600, () => {
+      particles.destroy();
+    });
+    
+    this.scene.time.delayedCall(800, () => {
+      sparkles.destroy();
+    });
   }
 
   destroy() {

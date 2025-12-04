@@ -38,7 +38,11 @@ export class WorkshopLayout {
     // Row 4 - Late game
     { id: 'elf_2', type: BuildingType.ELF_HOUSE, x: 670, y: 590, unlockOrder: 9, repaired: false },
     { id: 'research_lab', type: BuildingType.RESEARCH_LAB, x: 810, y: 600, unlockOrder: 10, repaired: false },
-    { id: 'santas_office', type: BuildingType.SANTAS_OFFICE, x: 950, y: 550, unlockOrder: 11, repaired: false },
+    { id: 'cookie_bakery', type: BuildingType.COOKIE_BAKERY, x: 950, y: 550, unlockOrder: 11, repaired: false },
+    { id: 'gift_wrapping', type: BuildingType.GIFT_WRAPPING_STATION, x: 600, y: 700, unlockOrder: 12, repaired: false },
+    { id: 'elf_dormitory', type: BuildingType.ELF_DORMITORY, x: 740, y: 710, unlockOrder: 13, repaired: false },
+    { id: 'reindeer_stables', type: BuildingType.REINDEER_STABLES, x: 880, y: 700, unlockOrder: 14, repaired: false },
+    { id: 'santas_office', type: BuildingType.SANTAS_OFFICE, x: 1020, y: 650, unlockOrder: 15, repaired: false },
   ];
 
   // Left side - Tree planting area (6 spots)
