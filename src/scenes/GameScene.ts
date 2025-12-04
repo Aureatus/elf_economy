@@ -72,7 +72,7 @@ export class GameScene extends Phaser.Scene {
     this.audioManager = new AudioManager(this);
     this.researchSystem = new ResearchSystem();
     this.buffSystem = new BuffSystem(this);
-    this.gridSystem = new GridSystem(this, 1200, 768); // Game world size
+    this.gridSystem = new GridSystem(this, 1024, 768); // Match playfield size
     this.decorationSystem = new DecorationSystem(this);
     
     // Initialize audio
