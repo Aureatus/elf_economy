@@ -11,7 +11,6 @@ export enum BuildingType {
   SNOWGLOBE_FACTORY = 'snowglobe_factory',
   ORNAMENT_WORKSHOP = 'ornament_workshop',
   SANTAS_OFFICE = 'santas_office',
-  RESEARCH_LAB = 'research_lab',
   COOKIE_BAKERY = 'cookie_bakery',
   GIFT_WRAPPING_STATION = 'gift_wrapping_station',
   ELF_DORMITORY = 'elf_dormitory',
@@ -102,13 +101,6 @@ export const BUILDING_DATA: Record<BuildingType, BuildingData> = {
     baseIncome: 10000,
     description: 'The big man himself!'
   },
-  [BuildingType.RESEARCH_LAB]: {
-    type: BuildingType.RESEARCH_LAB,
-    name: 'Research Lab',
-    baseCost: 15000,
-    baseIncome: 50,
-    description: 'Unlocks permanent upgrades'
-  },
   [BuildingType.COOKIE_BAKERY]: {
     type: BuildingType.COOKIE_BAKERY,
     name: 'Cookie Bakery',
@@ -196,7 +188,13 @@ export class Building {
     // Show repair prompt
     this.createRepairPrompt(currentCoins);
     
-    // No floating animation for broken buildings
+    // Remove broken label if exists
+    if ((this as any).brokenLabel) {
+      (this as any).brokenLabel.destroy();
+      (this as any).brokenLabel = undefined;
+    }
+    
+    // Spawn animation
   }
 
   private showActiveState() {
@@ -208,6 +206,12 @@ export class Building {
     if (this.repairPrompt) {
       this.repairPrompt.destroy();
       this.repairPrompt = undefined;
+    }
+    
+    // Remove broken label if exists
+    if ((this as any).brokenLabel) {
+      (this as any).brokenLabel.destroy();
+      (this as any).brokenLabel = undefined;
     }
     
     // Spawn animation
@@ -267,7 +271,8 @@ export class Building {
     });
     text.setOrigin(0.5);
     
-    const costText = this.scene.add.text(0, 8, `${data.baseCost} coins`, {
+    const costString = data.baseCost === 0 ? 'FREE!' : `${data.baseCost} coins`;
+    const costText = this.scene.add.text(0, 8, costString, {
       fontSize: '14px',
       color: canAfford ? '#2d5016' : '#654321'
     });
@@ -522,9 +527,6 @@ export class Building {
       case BuildingType.SANTAS_OFFICE:
         this.createSantaOfficeAnimation();
         break;
-      case BuildingType.RESEARCH_LAB:
-        this.createResearchLabAnimation();
-        break;
       case BuildingType.COOKIE_BAKERY:
         this.createCookieBakeryAnimation();
         break;
@@ -544,7 +546,7 @@ export class Building {
     // Hammer animation
     const hammer = this.scene.add.rectangle(-10, -20, 8, 15, 0x8b4513);
     hammer.setOrigin(0.5);
-    this.animationContainer.add(hammer);
+    this.animationContainer!.add(hammer);
     
     this.scene.tweens.add({
       targets: hammer,
@@ -560,7 +562,7 @@ export class Building {
     // Ribbon animation
     const ribbon = this.scene.add.rectangle(0, -15, 20, 3, 0xff0000);
     ribbon.setOrigin(0.5);
-    this.animationContainer.add(ribbon);
+    this.animationContainer!.add(ribbon);
     
     this.scene.tweens.add({
       targets: ribbon,
@@ -589,7 +591,7 @@ export class Building {
     // Window light animation
     const windowLight = this.scene.add.circle(0, -10, 8, 0xffff00, 0.8);
     windowLight.setOrigin(0.5);
-    this.animationContainer.add(windowLight);
+    this.animationContainer!.add(windowLight);
     
     this.scene.tweens.add({
       targets: windowLight,
@@ -605,7 +607,7 @@ export class Building {
     // Reindeer antlers animation
     const antlers = this.scene.add.rectangle(-5, -25, 3, 8, 0x8b4513);
     antlers.setOrigin(0.5);
-    this.animationContainer.add(antlers);
+    this.animationContainer!.add(antlers);
     
     this.scene.tweens.add({
       targets: antlers,
@@ -627,7 +629,7 @@ export class Building {
         0xff0000
       );
       sparkle.setOrigin(0.5);
-      this.animationContainer.add(sparkle);
+      this.animationContainer!.add(sparkle);
       
       this.scene.tweens.add({
         targets: sparkle,
@@ -646,7 +648,7 @@ export class Building {
     // Stuffing animation
     const stuffing = this.scene.add.rectangle(0, -15, 12, 8, 0xff0000);
     stuffing.setOrigin(0.5);
-    this.animationContainer.add(stuffing);
+    this.animationContainer!.add(stuffing);
     
     this.scene.tweens.add({
       targets: stuffing,
@@ -662,7 +664,7 @@ export class Building {
     // Snow inside globe
     const snow = this.scene.add.circle(0, -10, 6, 0xffffff);
     snow.setOrigin(0.5);
-    this.animationContainer.add(snow);
+    this.animationContainer!.add(snow);
     
     this.scene.tweens.add({
       targets: snow,
@@ -678,7 +680,7 @@ export class Building {
     // Rotating ornament
     const ornament = this.scene.add.circle(0, -15, 4, 0x69b4ff);
     ornament.setOrigin(0.5);
-    this.animationContainer.add(ornament);
+    this.animationContainer!.add(ornament);
     
     this.scene.tweens.add({
       targets: ornament,
@@ -693,7 +695,7 @@ export class Building {
     // Santa's hat bob
     const hat = this.scene.add.rectangle(0, -30, 20, 10, 0xff0000);
     hat.setOrigin(0.5);
-    this.animationContainer.add(hat);
+    this.animationContainer!.add(hat);
     
     this.scene.tweens.add({
       targets: hat,
@@ -703,29 +705,6 @@ export class Building {
       repeat: -1,
       ease: 'Sine.inOut'
     });
-  }
-
-  private createResearchLabAnimation() {
-    // Bubbling beakers
-    for (let i = 0; i < 2; i++) {
-      const bubble = this.scene.add.circle(
-        Phaser.Math.Between(-10, 10),
-        -20,
-        3,
-        0x00ffff
-      );
-      bubble.setOrigin(0.5);
-      this.animationContainer.add(bubble);
-      
-      this.scene.tweens.add({
-        targets: bubble,
-        y: -30,
-        duration: 1500 + i * 500,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.inOut'
-      });
-    }
   }
 
   private createCookieBakeryAnimation() {
@@ -745,7 +724,7 @@ export class Building {
     // Moving conveyor belt
     const belt = this.scene.add.rectangle(-15, -10, 30, 3, 0x654321);
     belt.setOrigin(0.5);
-    this.animationContainer.add(belt);
+    this.animationContainer!.add(belt);
     
     this.scene.tweens.add({
       targets: belt,
@@ -773,7 +752,7 @@ export class Building {
     // Reindeer movement
     const reindeer = this.scene.add.rectangle(-10, -15, 20, 10, 0x8b4513);
     reindeer.setOrigin(0.5);
-    this.animationContainer.add(reindeer);
+    this.animationContainer!.add(reindeer);
     
     this.scene.tweens.add({
       targets: reindeer,
@@ -789,6 +768,7 @@ export class Building {
     if (this.incomeText) this.incomeText.destroy();
     if (this.levelBadge) this.levelBadge.destroy();
     if (this.repairPrompt) this.repairPrompt.destroy();
+    if ((this as any).brokenLabel) (this as any).brokenLabel.destroy();
     if (this.animationContainer) this.animationContainer.destroy();
     if (this.productionParticles) this.productionParticles.destroy();
     if (this.sprite) this.sprite.destroy();

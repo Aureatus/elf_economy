@@ -1,13 +1,19 @@
 import Phaser from 'phaser';
+import { TreeResearchEffects } from '../systems/ResearchSystem';
 
 export class ChristmasTree {
+
   private scene: Phaser.Scene;
   private sprite!: Phaser.GameObjects.Graphics;
   private x: number;
   private y: number;
   private cooldown: number = 0;
-  private maxCooldown: number = 20000; // 20 seconds between shakes
-  private coinValue: number = 3; // Reduced from 12 to 3
+  private readonly baseMaxCooldown: number = 2000;
+  private readonly baseCoinValue: number = 1;
+  private readonly baseCoinCount: number = 2;
+  private maxCooldown: number = this.baseMaxCooldown; // 2 seconds between shakes
+  private coinValue: number = this.baseCoinValue; // Reduced from 3 to 1
+  private coinCount: number = this.baseCoinCount;
   private cooldownBar?: Phaser.GameObjects.Graphics;
   private promptText?: Phaser.GameObjects.Text;
   private onCoinDrop: (x: number, y: number, value: number) => void;
@@ -174,10 +180,9 @@ export class ChristmasTree {
     // Create particle effect
     this.createShakeParticles();
 
-    // Drop coins - just 2 coins per shake for slow progression
-    const coinCount = 2;
-    console.log(`[TREE] Shaking tree, dropping ${coinCount} coins of ${this.coinValue} value each = ${coinCount * this.coinValue} total`);
-    for (let i = 0; i < coinCount; i++) {
+    // Drop coins - just 2 coins per shake for slow progression (modified by research)
+    console.log(`[TREE] Shaking tree, dropping ${this.coinCount} coins of ${this.coinValue} value each = ${this.coinCount * this.coinValue} total`);
+    for (let i = 0; i < this.coinCount; i++) {
       const offsetX = Phaser.Math.Between(-30, 30);
       const offsetY = Phaser.Math.Between(-20, 20);
       
@@ -234,6 +239,20 @@ export class ChristmasTree {
           this.promptText.setVisible(true);
         }
       }
+    }
+  }
+
+  applyResearchEffects(effects: TreeResearchEffects) {
+    const newCoinValue = Math.max(1, Math.floor(this.baseCoinValue * effects.coinValueMultiplier));
+    const newCooldown = Math.max(400, Math.floor(this.baseMaxCooldown * effects.cooldownMultiplier));
+    const newCoinCount = Math.max(1, Math.round(this.baseCoinCount * effects.coinBatchMultiplier));
+
+    this.coinValue = newCoinValue;
+    this.maxCooldown = newCooldown;
+    this.coinCount = newCoinCount;
+
+    if (this.cooldown > this.maxCooldown) {
+      this.cooldown = this.maxCooldown;
     }
   }
 

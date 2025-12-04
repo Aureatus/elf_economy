@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 
 export class Player {
   public sprite: Phaser.Physics.Arcade.Sprite;
-  private speed: number = 200;
+  private baseSpeed: number = 200;
+  private speedMultiplier: number = 1;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.sprite(x, y, 'player');
@@ -16,17 +17,18 @@ export class Player {
   ) {
     let velocityX = 0;
     let velocityY = 0;
+    const currentSpeed = this.baseSpeed * this.speedMultiplier;
 
     if (cursors.left?.isDown || wasd.left.isDown) {
-      velocityX = -this.speed;
+      velocityX = -currentSpeed;
     } else if (cursors.right?.isDown || wasd.right.isDown) {
-      velocityX = this.speed;
+      velocityX = currentSpeed;
     }
 
     if (cursors.up?.isDown || wasd.up.isDown) {
-      velocityY = -this.speed;
+      velocityY = -currentSpeed;
     } else if (cursors.down?.isDown || wasd.down.isDown) {
-      velocityY = this.speed;
+      velocityY = currentSpeed;
     }
 
     // Normalize diagonal movement
@@ -36,5 +38,9 @@ export class Player {
     }
 
     this.sprite.setVelocity(velocityX, velocityY);
+  }
+
+  setSpeedMultiplier(multiplier: number) {
+    this.speedMultiplier = Math.max(0.5, multiplier);
   }
 }

@@ -1,17 +1,30 @@
 import Phaser from 'phaser';
-import { ResearchSystem, ResearchUpgrade, ResearchType } from '../systems/ResearchSystem';
+import { ResearchSystem, ResearchUpgrade, ResearchCategory } from '../systems/ResearchSystem';
+
+const CATEGORY_DEFINITIONS: Array<{ key: ResearchCategory; label: string; icon: string }> = [
+  { key: 'tree', label: 'Trees', icon: '🎄' },
+  { key: 'building', label: 'Buildings', icon: '🏭' },
+  { key: 'universal', label: 'Other', icon: '✨' }
+];
 
 export class ResearchPanel {
+
   private scene: Phaser.Scene;
   private panel?: Phaser.GameObjects.Container;
+  private coinsText?: Phaser.GameObjects.Text;
+  private cardsContainer?: Phaser.GameObjects.Container;
   private researchSystem: ResearchSystem;
-  private onUpgradePurchased?: (upgrade: ResearchUpgrade) => void;
+  private onUpgradePurchased?: (upgrade: ResearchUpgrade) => boolean;
   private onClose?: () => void;
+  private activeCategory: ResearchCategory = 'tree';
+  private categoryButtons: Map<ResearchCategory, Phaser.GameObjects.Rectangle> = new Map();
+  private lastShownCoins: number = 0;
 
   constructor(
+
     scene: Phaser.Scene,
     researchSystem: ResearchSystem,
-    onUpgradePurchased?: (upgrade: ResearchUpgrade) => void,
+    onUpgradePurchased?: (upgrade: ResearchUpgrade) => boolean,
     onClose?: () => void
   ) {
     this.scene = scene;
@@ -20,11 +33,20 @@ export class ResearchPanel {
     this.onClose = onClose;
   }
 
-  show() {
-    if (this.panel) {
-      this.panel.destroy();
+  show(currentCoins: number) {
+    this.lastShownCoins = currentCoins;
+
+    if (!this.panel) {
+      this.createPanel(currentCoins);
+    } else {
+      this.updateCoins(currentCoins);
     }
 
+    this.refreshCards(currentCoins);
+  }
+
+
+  private createPanel(currentCoins: number) {
     // Create main panel
     this.panel = this.scene.add.container(512, 384);
     this.panel.setDepth(100);
@@ -43,23 +65,20 @@ export class ResearchPanel {
     title.setOrigin(0.5);
     this.panel.add(title);
 
-    // Research points display
-    const pointsText = this.scene.add.text(0, -180, `Research Points: ${this.researchSystem.getResearchPoints()}`, {
+    // Coins display
+    this.coinsText = this.scene.add.text(0, -180, `Available Coins: ${currentCoins}`, {
       fontSize: '18px',
       color: '#90EE90'
     });
-    pointsText.setOrigin(0.5);
-    this.panel.add(pointsText);
+    this.coinsText.setOrigin(0.5);
+    this.panel.add(this.coinsText);
 
-    // Create upgrade cards
-    const upgrades = this.researchSystem.getAllUpgrades();
-    const cardHeight = 80;
-    const startY = -120;
+    this.createCategoryTabs();
 
-    upgrades.forEach((upgrade, index) => {
-      const y = startY + (index * cardHeight);
-      this.createUpgradeCard(upgrade, y);
-    });
+    // Container for upgrade cards
+    this.cardsContainer = this.scene.add.container(0, 0);
+    this.panel.add(this.cardsContainer);
+
 
     // Close button
     const closeBtn = this.scene.add.rectangle(250, -220, 40, 30, 0xff6347, 0.8);
@@ -87,14 +106,83 @@ export class ResearchPanel {
     });
   }
 
-  private createUpgradeCard(upgrade: ResearchUpgrade, y: number) {
+  private updateCoins(currentCoins: number) {
+    if (this.coinsText) {
+      this.coinsText.setText(`Available Coins: ${currentCoins}`);
+    }
+  }
+
+  private createCategoryTabs() {
     if (!this.panel) return;
 
+    const startX = -200;
+    CATEGORY_DEFINITIONS.forEach((category, index) => {
+      const x = startX + (index * 200);
+      const y = -130;
+
+      const bg = this.scene.add.rectangle(x, y, 180, 40, 0x1a2f1a, 0.85);
+      bg.setStrokeStyle(2, 0x654321);
+      bg.setInteractive({ useHandCursor: true });
+      bg.on('pointerdown', () => {
+        this.switchCategory(category.key);
+      });
+      this.panel!.add(bg);
+
+      const label = this.scene.add.text(x, y, `${category.icon} ${category.label}`, {
+        fontSize: '14px',
+        color: '#ffffff',
+        fontStyle: 'bold'
+      });
+      label.setOrigin(0.5);
+      this.panel!.add(label);
+
+      this.categoryButtons.set(category.key, bg);
+    });
+
+    this.updateCategoryHighlights();
+  }
+
+  private switchCategory(category: ResearchCategory) {
+    if (this.activeCategory === category) return;
+    this.activeCategory = category;
+    this.refreshCards(this.lastShownCoins);
+  }
+
+  private updateCategoryHighlights() {
+    this.categoryButtons.forEach((button, key) => {
+      const isActive = key === this.activeCategory;
+      button.setFillStyle(isActive ? 0x3c7526 : 0x1a2f1a, isActive ? 0.95 : 0.7);
+      button.setStrokeStyle(2, isActive ? 0xffd700 : 0x654321);
+    });
+  }
+
+  private refreshCards(currentCoins: number) {
+    if (!this.cardsContainer) return;
+
+    this.lastShownCoins = currentCoins;
+    this.cardsContainer.removeAll(true);
+
+    const upgrades = this.researchSystem.getUpgradesByCategory(this.activeCategory);
+    const cardHeight = 90;
+    const startY = -80;
+
+    upgrades.forEach((upgrade, index) => {
+      const y = startY + (index * cardHeight);
+      this.createUpgradeCard(upgrade, y, currentCoins);
+    });
+
+    this.updateCategoryHighlights();
+  }
+
+
+  private createUpgradeCard(upgrade: ResearchUpgrade, y: number, currentCoins: number) {
+    if (!this.cardsContainer) return;
+
     const card = this.scene.add.container(0, y);
-    this.panel.add(card);
+    this.cardsContainer.add(card);
 
     // Card background
-    const canAfford = this.researchSystem.getResearchPoints() >= upgrade.cost;
+    const canAfford = currentCoins >= upgrade.cost;
     const isMaxed = upgrade.currentLevel >= upgrade.maxLevel;
     const bgColor = isMaxed ? 0x666666 : (canAfford ? 0x2d5016 : 0x1a2f1a);
     
@@ -150,10 +238,10 @@ export class ResearchPanel {
       statusText = 'MAXED';
       statusColor = '#ffd700';
     } else if (canAfford) {
-      statusText = `${upgrade.cost} RP`;
+      statusText = `${upgrade.cost} Coins`;
       statusColor = '#90EE90';
     } else {
-      statusText = `${upgrade.cost} RP`;
+      statusText = `${upgrade.cost} Coins`;
       statusColor = '#ff6347';
     }
 
@@ -167,7 +255,10 @@ export class ResearchPanel {
 
     // Effect indicator
     const totalEffect = upgrade.currentLevel * upgrade.effectPerLevel;
-    const effectText = this.scene.add.text(240, 0, `+${(totalEffect * 100).toFixed(0)}%`, {
+    const effectPercent = (totalEffect * 100).toFixed(0);
+    const sign = upgrade.effectDisplayType === 'decrease' ? '-' : '+';
+    const effectLabel = upgrade.effectText ? upgrade.effectText : `${sign}${effectPercent}%`;
+    const effectText = this.scene.add.text(240, 0, effectLabel, {
       fontSize: '14px',
       color: isMaxed ? '#999999' : '#90EE90',
       fontStyle: 'bold'
@@ -177,15 +268,15 @@ export class ResearchPanel {
   }
 
   private purchaseUpgrade(upgrade: ResearchUpgrade) {
-    if (this.researchSystem.purchaseUpgrade(upgrade.id)) {
-      // Refresh the panel
-      this.show();
-      
-      // Callback
-      if (this.onUpgradePurchased) {
-        this.onUpgradePurchased(upgrade);
-      }
+    if (this.onUpgradePurchased) {
+      const success = this.onUpgradePurchased(upgrade);
+      // The scene calls refresh(), so we don't need to do anything here except triggering the callback
     }
+  }
+
+  // Helper to refresh with new coins
+  refresh(currentCoins: number) {
+    this.show(currentCoins);
   }
 
   hide() {
@@ -199,6 +290,10 @@ export class ResearchPanel {
           if (this.panel) {
             this.panel.destroy();
             this.panel = undefined;
+            this.coinsText = undefined;
+            this.cardsContainer = undefined;
+            this.categoryButtons.clear();
+            this.activeCategory = 'tree';
           }
         }
       });

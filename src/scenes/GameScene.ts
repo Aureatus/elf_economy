@@ -13,7 +13,7 @@ import { CookieShop } from '../ui/CookieShop';
 import { EconomySystem } from '../systems/EconomySystem';
 import { WorkshopLayout, BuildingSpot, TreeSpot } from '../systems/WorkshopLayout';
 import { ResearchSystem } from '../systems/ResearchSystem';
-import { BuffSystem, BuffType } from '../systems/BuffSystem';
+import { BuffSystem, BuffType, CookieType } from '../systems/BuffSystem';
 import { GridSystem } from '../systems/GridSystem';
 import { DecorationSystem } from '../systems/DecorationSystem';
 import { AssetCreator } from '../utils/AssetCreator';
@@ -54,6 +54,8 @@ export class GameScene extends Phaser.Scene {
   // Environment
   private environmentRenderer!: EnvironmentRenderer;
   
+  private magnetActiveLastFrame: boolean = false;
+  
   constructor() {
     super({ key: 'GameScene' });
   }
@@ -66,7 +68,7 @@ export class GameScene extends Phaser.Scene {
     console.log('GameScene: create() started');
     
     // Initialize systems
-    this.economy = new EconomySystem(50);
+    this.economy = new EconomySystem(0);
     this.audioManager = new AudioManager(this);
     this.researchSystem = new ResearchSystem();
     this.buffSystem = new BuffSystem(this);
@@ -145,16 +147,35 @@ export class GameScene extends Phaser.Scene {
     
     // Create trees and planting spots
     this.createTrees();
+    this.refreshTreeResearchEffects();
     
     // Start game loops
     this.startGameLoops();
   }
 
   update(time: number, delta: number) {
+    this.buffSystem.update();
+
+    const buffSpeed = this.buffSystem.getMultiplier(BuffType.SPEED_BOOST);
+    const researchSpeed = this.researchSystem.getPlayerSpeedMultiplier();
+    const speedMultiplier = Math.max(1, buffSpeed * researchSpeed);
+    this.player.setSpeedMultiplier(speedMultiplier);
     this.player.update(this.cursors, this.wasd);
+
     this.buildings.forEach(building => building.update());
     this.trees.forEach(tree => tree.update(delta));
-    this.buffSystem.update();
+
+    const magnetResearchLevel = this.researchSystem.getMagnetResearchLevel();
+    const hasMagnetBuff = this.buffSystem.hasBuffOfType(BuffType.MAGNETIC_PULL);
+    const magnetStrength = hasMagnetBuff ? Math.max(magnetResearchLevel, 2) : magnetResearchLevel;
+    const magnetActive = magnetStrength > 0;
+
+    if (magnetActive) {
+      this.applyMagnetPerk(magnetStrength);
+    } else if (this.magnetActiveLastFrame) {
+      this.resetMagnetizedCoins();
+    }
+    this.magnetActiveLastFrame = magnetActive;
   }
 
   private createTrees() {
@@ -191,7 +212,13 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private refreshTreeResearchEffects() {
+    const effects = this.researchSystem.getTreeResearchEffects();
+    this.trees.forEach(tree => tree.applyResearchEffects(effects));
+  }
+
   private attemptPlantTree(spot: TreeSpot, plantingSpot: TreePlantingSpot) {
+
     const cost = spot.cost;
     
     // Just check if you can afford it
@@ -217,6 +244,7 @@ export class GameScene extends Phaser.Scene {
       (x, y, value) => this.spawnCoinAt(x, y, value)
     );
     this.trees.set(spot.id, tree);
+    tree.applyResearchEffects(this.researchSystem.getTreeResearchEffects());
     
     this.updateUI();
     this.uiManager.showFloatingText(
@@ -241,6 +269,10 @@ export class GameScene extends Phaser.Scene {
       this.saveGame();
       this.uiManager.showFloatingText(512, 100, 'Game Saved!', '#90EE90');
     });
+
+    this.input.keyboard!.on('keydown-R', () => {
+      this.openResearchPanel();
+    });
   }
 
   private createBuildings() {
@@ -263,9 +295,7 @@ export class GameScene extends Phaser.Scene {
       if (building.isRepaired()) {
         // Setup click handler for repaired buildings
         building.getSprite().on('pointerdown', () => {
-          if (building.getType() === BuildingType.RESEARCH_LAB) {
-            this.openResearchPanel();
-          } else if (building.getType() === BuildingType.COOKIE_BAKERY) {
+          if (building.getType() === BuildingType.COOKIE_BAKERY) {
             this.openCookieShop();
           } else {
             this.buildingInfoPanel.show(building);
@@ -343,18 +373,14 @@ export class GameScene extends Phaser.Scene {
     // Buildings spawn coins or research points
     this.economy.getBuildings().forEach(building => {
       if (building.shouldSpawnCoin()) {
-        if (building.getType() === BuildingType.RESEARCH_LAB) {
-          // Generate research points
-          this.researchSystem.addResearchPoints(1);
-          this.uiManager.showFloatingText(building.x, building.y, '+1 RP', '#00ffff');
-        } else {
-          // Generate regular coins with production boost and value multipliers
+        // Generate regular coins with production boost and value multipliers
           const baseIncome = building.getIncome();
           const productionMultiplier = this.researchSystem.getProductionSpeedMultiplier() * this.buffSystem.getMultiplier(BuffType.PRODUCTION_BOOST);
           const valueMultiplier = this.researchSystem.getCoinValueMultiplier();
           const efficiencyMultiplier = this.researchSystem.getBuildingEfficiencyMultiplier();
           const decorationMultiplier = 1 + this.decorationSystem.getTotalBonus();
-          const adjustedIncome = Math.floor(baseIncome * productionMultiplier * valueMultiplier * efficiencyMultiplier * decorationMultiplier);
+          const synergyMultiplier = this.researchSystem.getHolidaySynergyMultiplier();
+          const adjustedIncome = Math.floor(baseIncome * productionMultiplier * valueMultiplier * efficiencyMultiplier * decorationMultiplier * synergyMultiplier);
           
           // Special handling for Gift Wrapping Station
           if (building.getType() === BuildingType.GIFT_WRAPPING_STATION) {
@@ -368,10 +394,9 @@ export class GameScene extends Phaser.Scene {
             for (let i = 0; i < coinCount; i++) {
               const offsetX = Phaser.Math.Between(-30, 30);
               const offsetY = Phaser.Math.Between(-20, 20);
-              this.time.delayedCall(i * 50, () => {
-                this.spawnCoinAt(building.x + offsetX, building.y + offsetY, coinValue);
-              });
-            }
+            this.time.delayedCall(i * 50, () => {
+              this.spawnCoinAt(building.x + offsetX, building.y + offsetY, coinValue);
+            });
           }
         }
       }
@@ -393,7 +418,7 @@ export class GameScene extends Phaser.Scene {
     this.uiManager.updateCoins(this.economy.getCoins());
     this.uiManager.updateIncome(this.economy.calculateIncome());
     this.uiManager.updateBuildingCount(this.getRepairedBuildingCount());
-    this.uiManager.updateResearchPoints(this.researchSystem.getResearchPoints());
+    // Research points removed
     this.updateAffordabilityIndicators();
   }
 
@@ -428,6 +453,12 @@ export class GameScene extends Phaser.Scene {
     coin: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Tilemaps.Tile | Phaser.Physics.Arcade.Body | Phaser.Physics.Arcade.StaticBody
   ) {
     const coinObj = coin as unknown as Coin;
+    this.finalizeCoinCollection(coinObj);
+  }
+
+  private finalizeCoinCollection(coinObj: Coin) {
+    if (!coinObj.active) return;
+
     let value = coinObj.getValue();
     
     // Apply gift wrapping multiplier if station is active
@@ -436,7 +467,8 @@ export class GameScene extends Phaser.Scene {
     );
     
     if (hasGiftWrapping) {
-      value = Math.floor(value * this.researchSystem.getCoinValueMultiplier());
+      const giftWrappingBonus = 1.25;
+      value = Math.floor(value * giftWrappingBonus);
     }
     
     // Apply reindeer stable collection bonus
@@ -454,6 +486,43 @@ export class GameScene extends Phaser.Scene {
     this.uiManager.showFloatingText(coinObj.x, coinObj.y, `+${value}`, '#ffd700');
     this.audioManager.playCoinCollectSound();
     this.updateAffordabilityIndicators();
+  }
+
+  private applyMagnetPerk(strength: number) {
+    if (!this.coinGroup) return;
+    const playerSprite = this.player.sprite;
+    const captureRadius = 25 + (strength * 10);
+    const magnetRange = 140 + (strength * 60);
+    const magnetSpeed = 350 + (strength * 80);
+
+    this.coinGroup.children.each(child => {
+      const coinObj = child as Coin;
+      if (!coinObj.active) return true;
+      const distance = Phaser.Math.Distance.Between(coinObj.x, coinObj.y, playerSprite.x, playerSprite.y);
+
+      if (distance <= captureRadius) {
+        this.finalizeCoinCollection(coinObj);
+        return true;
+      }
+
+      if (distance <= magnetRange) {
+        this.physics.moveToObject(coinObj, playerSprite, magnetSpeed);
+      }
+
+      return true;
+    }, this);
+  }
+
+  private resetMagnetizedCoins() {
+    if (!this.coinGroup) return;
+    this.coinGroup.children.each(child => {
+      const coinObj = child as Coin;
+      const body = coinObj.body as Phaser.Physics.Arcade.Body | null;
+      if (body) {
+        body.setVelocity(0, 0);
+      }
+      return true;
+    }, this);
   }
 
   private saveGame() {
@@ -597,9 +666,22 @@ export class GameScene extends Phaser.Scene {
     console.log('Game reset complete!');
   }
 
-  private onResearchUpgradePurchased(upgrade: any) {
-    this.updateUI();
-    this.uiManager.showFloatingText(512, 200, 'Research Complete!', '#90EE90');
+  private onResearchUpgradePurchased(upgrade: any): boolean {
+    const currentCoins = this.economy.getCoins();
+    if (this.economy.spendCoins(upgrade.cost)) {
+      this.researchSystem.unlockUpgradeLevel(upgrade.id);
+      this.updateUI();
+      this.uiManager.showFloatingText(512, 200, 'Research Complete!', '#90EE90');
+      this.audioManager.playBuildingUpgradeSound();
+      
+      // Refresh panel
+      this.researchPanel.refresh(this.economy.getCoins());
+      this.refreshTreeResearchEffects();
+      return true;
+    }
+    
+    this.uiManager.showFloatingText(512, 200, 'Not enough coins!', '#ff6347');
+    return false;
   }
 
   private onResearchPanelClosed() {
@@ -607,10 +689,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private openResearchPanel() {
-    this.researchPanel.show();
+    this.researchPanel.show(this.economy.getCoins());
   }
 
-  private onCookiePurchased(type: 'basic' | 'chocolate' | 'gingerbread', cost: number) {
+  private onCookiePurchased(type: CookieType, cost: number) {
     if (this.economy.spendCoins(cost)) {
       this.buffSystem.consumeCookie(type);
       this.updateUI();

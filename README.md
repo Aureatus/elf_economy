@@ -59,7 +59,7 @@ A Christmas-themed tycoon game where you manage Santa's workshop! Collect coins,
 ## Controls
 
 - **WASD** or **Arrow Keys** - Move your elf around
-- **Left Click Christmas Tree** - Shake it for coins! (3-5 coins worth 15 each)
+- **Left Click Christmas Tree** - Shake it for coins! (2 coins worth 1 each)
 - **Left Click Broken Buildings** - Repair them (if it's the next in sequence)
 - **Left Click Active Buildings** - Open upgrade panel
 - **S** - Manual save (also auto-saves every 30 seconds)

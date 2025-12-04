@@ -5,7 +5,7 @@ export class EconomySystem {
   private totalEarned: number;
   private buildings: Building[];
 
-  constructor(initialCoins: number = 50) {
+  constructor(initialCoins: number = 0) {
     this.coins = initialCoins;
     this.totalEarned = 0;
     this.buildings = [];

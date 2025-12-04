@@ -1,8 +1,12 @@
 export enum BuffType {
   PRODUCTION_BOOST = 'production_boost',
   COLLECTION_SPEED = 'collection_speed',
-  UPGRADE_DISCOUNT = 'upgrade_discount'
+  UPGRADE_DISCOUNT = 'upgrade_discount',
+  MAGNETIC_PULL = 'magnetic_pull',
+  SPEED_BOOST = 'speed_boost'
 }
+
+export type CookieType = 'basic' | 'chocolate' | 'gingerbread' | 'magnet' | 'speed';
 
 export interface Buff {
   id: string;
@@ -73,6 +77,10 @@ export class BuffSystem {
     return totalMultiplier;
   }
 
+  hasBuffOfType(type: BuffType): boolean {
+    return this.getBuffsByType(type).length > 0;
+  }
+
   getRemainingTime(buffId: string): number {
     const buff = this.activeBuffs.get(buffId);
     if (!buff) return 0;
@@ -93,8 +101,8 @@ export class BuffSystem {
   }
 
   // Cookie consumption methods
-  consumeCookie(cookieType: 'basic' | 'chocolate' | 'gingerbread'): void {
-    let buff: Buff;
+  consumeCookie(cookieType: CookieType): void {
+    let buff: Buff | undefined;
     
     switch (cookieType) {
       case 'basic':
@@ -104,12 +112,11 @@ export class BuffSystem {
           name: 'Basic Cookie',
           description: 'Production +25% for 60s',
           multiplier: 1.25,
-          duration: 60000, // 60 seconds
+          duration: 60000,
           startTime: Date.now(),
           icon: '🍪'
         };
         break;
-        
       case 'chocolate':
         buff = {
           id: `chocolate_cookie_${Date.now()}`,
@@ -117,12 +124,11 @@ export class BuffSystem {
           name: 'Chocolate Cookie',
           description: 'Production +50% for 90s',
           multiplier: 1.5,
-          duration: 90000, // 90 seconds
+          duration: 90000,
           startTime: Date.now(),
           icon: '🍫'
         };
         break;
-        
       case 'gingerbread':
         buff = {
           id: `gingerbread_${Date.now()}`,
@@ -130,17 +136,42 @@ export class BuffSystem {
           name: 'Gingerbread Cookie',
           description: 'Production +100% for 45s',
           multiplier: 2.0,
-          duration: 45000, // 45 seconds
+          duration: 45000,
           startTime: Date.now(),
           icon: '🍪'
         };
         break;
-        
+      case 'magnet':
+        buff = {
+          id: `magnet_cookie_${Date.now()}`,
+          type: BuffType.MAGNETIC_PULL,
+          name: 'Magnet Perk',
+          description: 'Coins fly toward you for 45s',
+          multiplier: 1,
+          duration: 45000,
+          startTime: Date.now(),
+          icon: '🧲'
+        };
+        break;
+      case 'speed':
+        buff = {
+          id: `speed_cookie_${Date.now()}`,
+          type: BuffType.SPEED_BOOST,
+          name: 'Speed Perk',
+          description: 'Movement speed +50% for 45s',
+          multiplier: 1.5,
+          duration: 45000,
+          startTime: Date.now(),
+          icon: '⚡'
+        };
+        break;
       default:
-        return;
+        buff = undefined;
     }
     
-    this.addBuff(buff);
+    if (buff) {
+      this.addBuff(buff);
+    }
   }
 
   // Save/Load functionality

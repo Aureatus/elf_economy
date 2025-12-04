@@ -1,17 +1,17 @@
 import Phaser from 'phaser';
-import { BuffSystem } from '../systems/BuffSystem';
+import { BuffSystem, CookieType } from '../systems/BuffSystem';
 
 export class CookieShop {
   private scene: Phaser.Scene;
   private panel?: Phaser.GameObjects.Container;
   private buffSystem: BuffSystem;
-  private onCookiePurchased?: (type: 'basic' | 'chocolate' | 'gingerbread', cost: number) => void;
+  private onCookiePurchased?: (type: CookieType, cost: number) => void;
   private onClose?: () => void;
 
   constructor(
     scene: Phaser.Scene,
     buffSystem: BuffSystem,
-    onCookiePurchased?: (type: 'basic' | 'chocolate' | 'gingerbread', cost: number) => void,
+    onCookiePurchased?: (type: CookieType, cost: number) => void,
     onClose?: () => void
   ) {
     this.scene = scene;
@@ -30,12 +30,12 @@ export class CookieShop {
     this.panel.setDepth(100);
 
     // Background
-    const bg = this.scene.add.rectangle(0, 0, 500, 400, 0x8b4513, 0.95);
+    const bg = this.scene.add.rectangle(0, 0, 550, 520, 0x8b4513, 0.95);
     bg.setStrokeStyle(3, 0xffd700);
     this.panel.add(bg);
 
     // Title
-    const title = this.scene.add.text(0, -170, '🍪 Cookie Bakery', {
+    const title = this.scene.add.text(0, -220, '🍪 Cookie Bakery', {
       fontSize: '24px',
       color: '#ffd700',
       fontStyle: 'bold'
@@ -44,7 +44,7 @@ export class CookieShop {
     this.panel.add(title);
 
     // Subtitle
-    const subtitle = this.scene.add.text(0, -140, 'Feed your elves for productivity boosts!', {
+    const subtitle = this.scene.add.text(0, -190, 'Feed your elves special perks!', {
       fontSize: '14px',
       color: '#ffffff'
     });
@@ -52,15 +52,17 @@ export class CookieShop {
     this.panel.add(subtitle);
 
     // Cookie options
-    this.createCookieOption('basic', 'Basic Cookie', '🍪', 50, 'Production +25% for 60s', -60, currentCoins);
-    this.createCookieOption('chocolate', 'Chocolate Cookie', '🍫', 120, 'Production +50% for 90s', 0, currentCoins);
-    this.createCookieOption('gingerbread', 'Gingerbread Cookie', '🍪', 250, 'Production +100% for 45s', 60, currentCoins);
+    this.createCookieOption('basic', 'Basic Cookie', '🍪', 50, 'Production +25% for 60s', -90, currentCoins);
+    this.createCookieOption('chocolate', 'Chocolate Cookie', '🍫', 120, 'Production +50% for 90s', -30, currentCoins);
+    this.createCookieOption('gingerbread', 'Gingerbread Cookie', '🍪', 250, 'Production +100% for 45s', 30, currentCoins);
+    this.createCookieOption('magnet', 'North Pole Magnet', '🧲', 180, 'Pulls nearby coins to you for 45s', 90, currentCoins);
+    this.createCookieOption('speed', 'Sugar Rush', '⚡', 200, 'Movement speed +50% for 45s', 150, currentCoins);
 
     // Active buffs display
-    this.createActiveBuffsDisplay();
+    this.createActiveBuffsDisplay(210);
 
     // Close button
-    const closeBtn = this.scene.add.rectangle(200, -170, 40, 30, 0xff6347, 0.8);
+    const closeBtn = this.scene.add.rectangle(230, -230, 40, 30, 0xff6347, 0.8);
     closeBtn.setInteractive({ useHandCursor: true });
     closeBtn.on('pointerdown', () => {
       this.hide();
@@ -68,7 +70,7 @@ export class CookieShop {
     });
     this.panel.add(closeBtn);
 
-    const closeText = this.scene.add.text(200, -170, '✕', {
+    const closeText = this.scene.add.text(230, -230, '✕', {
       fontSize: '20px',
       color: '#ffffff'
     });
@@ -86,7 +88,7 @@ export class CookieShop {
   }
 
   private createCookieOption(
-    type: 'basic' | 'chocolate' | 'gingerbread',
+    type: CookieType,
     name: string,
     icon: string,
     cost: number,
@@ -150,11 +152,12 @@ export class CookieShop {
     card.add(costText);
   }
 
-  private createActiveBuffsDisplay() {
+  private createActiveBuffsDisplay(startY: number = 120) {
     if (!this.panel) return;
+    const panel = this.panel;
 
     const activeBuffs = this.buffSystem.getActiveBuffs();
-    const y = 120;
+    const y = startY;
 
     // Title
     const title = this.scene.add.text(0, y, '🎯 Active Buffs', {
@@ -163,7 +166,7 @@ export class CookieShop {
       fontStyle: 'bold'
     });
     title.setOrigin(0.5);
-    this.panel.add(title);
+    panel.add(title);
 
     if (activeBuffs.length === 0) {
       const noBuffs = this.scene.add.text(0, y + 30, 'No active buffs', {
@@ -171,7 +174,7 @@ export class CookieShop {
         color: '#999999'
       });
       noBuffs.setOrigin(0.5);
-      this.panel.add(noBuffs);
+      panel.add(noBuffs);
       return;
     }
 
@@ -184,11 +187,11 @@ export class CookieShop {
         color: '#90EE90'
       });
       buffText.setOrigin(0.5);
-      this.panel.add(buffText);
+      panel.add(buffText);
     });
   }
 
-  private purchaseCookie(type: 'basic' | 'chocolate' | 'gingerbread', cost: number) {
+  private purchaseCookie(type: CookieType, cost: number) {
     if (this.onCookiePurchased) {
       this.onCookiePurchased(type, cost);
     }

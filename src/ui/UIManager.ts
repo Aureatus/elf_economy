@@ -62,7 +62,7 @@ export class UIManager {
     this.researchPointsText.setDepth(51);
     this.researchPointsText.setScrollFactor(0);
     
-    const instructions = this.scene.add.text(512, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Research Lab: Open Research', {
+    const instructions = this.scene.add.text(512, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Press R: Open Research Lab', {
       fontSize: '16px',
       color: '#2d5016',
       backgroundColor: '#ffffff',

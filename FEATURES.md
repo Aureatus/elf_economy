@@ -37,7 +37,7 @@
 - [x] Keyboard shortcuts (B for build, S for save)
 
 ### Economy & Progression
-- [x] Starting balance of 50 coins
+- [x] Starting balance of 0 coins
 - [x] Income calculation from all buildings
 - [x] Exponential income scaling (1.5x per level)
 - [x] Exponential cost scaling (2x per level)
