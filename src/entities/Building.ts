@@ -377,29 +377,7 @@ export class Building {
     });
   }
 
-  private createUpgradeParticles() {
-    // Enhanced upgrade particles based on building level
-    const particleCount = Math.min(10 + this.level * 2, 30);
-    const colors = [0xffd700, 0xff6347, 0x90EE90, 0x00ffff, 0xff69b4];
-    const color = colors[this.level % colors.length];
-    
-    const particles = this.scene.add.particles(this.x, this.y, 'star', {
-      speed: { min: 50, max: 150 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 1, end: 0 },
-      lifespan: 1000,
-      quantity: particleCount,
-      tint: color,
-      blendMode: 'ADD'
-    });
-    
-    particles.setDepth(20);
-    
-    this.scene.time.delayedCall(1000, () => {
-      particles.destroy();
-    });
-  }
+
 
   update() {
     if (this.state !== BuildingState.ACTIVE) return;
@@ -467,27 +445,9 @@ export class Building {
     this.scene.time.delayedCall(300, () => {
       this.sprite.clearTint();
     });
-
-    this.createUpgradeParticles();
   }
 
-  private createUpgradeParticles() {
-    const particles = this.scene.add.particles(this.x, this.y, 'coin', {
-      speed: { min: 50, max: 150 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 1, end: 0 },
-      lifespan: 500,
-      quantity: 10,
-      blendMode: 'ADD'
-    });
-    
-    particles.setDepth(20);
-    
-    this.scene.time.delayedCall(500, () => {
-      particles.destroy();
-    });
-  }
+
 
   getLevel(): number {
     return this.level;
