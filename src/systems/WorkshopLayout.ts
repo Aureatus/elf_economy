@@ -1,6 +1,24 @@
 import { BuildingType } from '../entities/Building';
+ 
+ export const BUILDING_SEQUENCE: BuildingType[] = [
+   BuildingType.TOY_MAKER,
+   BuildingType.GIFT_WRAPPER,
+   BuildingType.COOKIE_FACTORY,
+   BuildingType.ELF_HOUSE,
+   BuildingType.REINDEER_STABLE,
+   BuildingType.CANDY_CANE_FORGE,
+   BuildingType.STOCKING_STUFFER,
+   BuildingType.SNOWGLOBE_FACTORY,
+   BuildingType.ORNAMENT_WORKSHOP,
+   BuildingType.COOKIE_BAKERY,
+   BuildingType.GIFT_WRAPPING_STATION,
+   BuildingType.ELF_DORMITORY,
+   BuildingType.REINDEER_STABLES,
+   BuildingType.SANTAS_OFFICE
+ ];
+ 
+ export interface BuildingSpot {
 
-export interface BuildingSpot {
   id: string;
   type: BuildingType;
   x: number;

@@ -6,6 +6,24 @@ export interface SaveData {
     y: number;
     level: number;
     slotIndex: number;
+    spotId?: string;
+  }[];
+  buildingSpotsState?: {
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    unlockOrder: number;
+    repaired: boolean;
+    level?: number;
+  }[];
+  treeSpotsState?: {
+    id: string;
+    x: number;
+    y: number;
+    cost: number;
+    unlockOrder: number;
+    planted: boolean;
   }[];
   trees?: {
     spotId: string;
@@ -16,6 +34,7 @@ export interface SaveData {
   buffs?: any;
   totalEarned: number;
   lastSaveTime: number;
+  nextBuildingSeqIndex?: number;
 }
 
 export class SaveManager {

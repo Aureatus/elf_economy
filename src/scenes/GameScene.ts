@@ -11,7 +11,7 @@ import { BuildingInfoPanel } from '../ui/BuildingInfoPanel';
 import { ResearchPanel } from '../ui/ResearchPanel';
 import { CookieShop } from '../ui/CookieShop';
 import { EconomySystem } from '../systems/EconomySystem';
-import { WorkshopLayout, BuildingSpot, TreeSpot } from '../systems/WorkshopLayout';
+import { WorkshopLayout, BuildingSpot, TreeSpot, BUILDING_SEQUENCE } from '../systems/WorkshopLayout';
 import { ResearchSystem } from '../systems/ResearchSystem';
 import { BuffSystem, BuffType, CookieType } from '../systems/BuffSystem';
 import { GridSystem } from '../systems/GridSystem';
@@ -40,6 +40,7 @@ export class GameScene extends Phaser.Scene {
   private buildingSpots: BuildingSpot[] = [];
   private buildings: Map<string, Building> = new Map();
   private buildingLevels: Map<string, number> = new Map();
+  private nextBuildingSequenceIndex: number = 0;
   
   // Trees
   private treeSpots: TreeSpot[] = [];
@@ -130,7 +131,9 @@ export class GameScene extends Phaser.Scene {
       this.economy.calculateIncome(),
       this.getRepairedBuildingCount(),
       () => this.saveGame(),
-      () => this.resetGame()
+      () => this.resetGame(),
+      () => this.requestNewTreeSpot(),
+      () => this.requestNewBuildingSpot()
     );
     
     this.buildingInfoPanel = new BuildingInfoPanel(
@@ -187,37 +190,45 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createTrees() {
-    this.treeSpots.forEach(spot => {
-      if (spot.planted) {
-        // Create planted tree
-        const tree = new ChristmasTree(
-          this,
-          spot.x,
-          spot.y,
-          (x, y, value) => this.spawnCoinAt(x, y, value)
-        );
-        this.trees.set(spot.id, tree);
-      } else {
-        // Create planting spot
-        const plantingSpot = new TreePlantingSpot(
-          this,
-          spot.id,
-          spot.x,
-          spot.y,
-          spot.cost
-        );
-        
-        // Set click handler on the prompt button
-        plantingSpot.setPlantClickHandler(() => {
-          this.attemptPlantTree(spot, plantingSpot);
-        });
-        
-        // Update the prompt with current coins
-        plantingSpot.updatePlantPrompt(this.economy.getCoins());
-        
-        this.plantingSpots.set(spot.id, plantingSpot);
+    this.treeSpots.forEach(spot => this.spawnTreeSpot(spot));
+  }
+
+  private spawnTreeSpot(spot: TreeSpot) {
+    if (spot.planted) {
+      const existing = this.trees.get(spot.id);
+      if (existing) {
+        existing.destroy();
+        this.trees.delete(spot.id);
       }
-    });
+      const tree = new ChristmasTree(
+        this,
+        spot.x,
+        spot.y,
+        (x, y, value) => this.spawnCoinAt(x, y, value)
+      );
+      this.trees.set(spot.id, tree);
+      tree.applyResearchEffects(this.researchSystem.getTreeResearchEffects());
+    } else {
+      if (this.plantingSpots.has(spot.id)) {
+        this.plantingSpots.get(spot.id)!.destroy();
+        this.plantingSpots.delete(spot.id);
+      }
+      const plantingSpot = new TreePlantingSpot(
+        this,
+        spot.id,
+        spot.x,
+        spot.y,
+        spot.cost
+      );
+      
+      plantingSpot.setPlantClickHandler(() => {
+        this.attemptPlantTree(spot, plantingSpot);
+      });
+      
+      plantingSpot.updatePlantPrompt(this.economy.getCoins());
+      
+      this.plantingSpots.set(spot.id, plantingSpot);
+    }
   }
 
   private refreshTreeResearchEffects() {
@@ -244,15 +255,7 @@ export class GameScene extends Phaser.Scene {
     spot.planted = true;
     plantingSpot.destroy();
     this.plantingSpots.delete(spot.id);
-    
-    const tree = new ChristmasTree(
-      this,
-      spot.x,
-      spot.y,
-      (x, y, value) => this.spawnCoinAt(x, y, value)
-    );
-    this.trees.set(spot.id, tree);
-    tree.applyResearchEffects(this.researchSystem.getTreeResearchEffects());
+    this.spawnTreeSpot(spot);
     
     this.updateUI();
     this.uiManager.showFloatingText(
@@ -283,48 +286,99 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private createBuildings() {
-    this.buildingSpots.forEach(spot => {
-      const data = BUILDING_DATA[spot.type];
-      const state = spot.repaired ? BuildingState.ACTIVE : BuildingState.BROKEN;
-      const level = this.buildingLevels.get(spot.id) || 1;
-      
-      const building = new Building(
-        this,
-        spot.id,
-        spot.x,
-        spot.y,
-        spot.type,
-        data.baseIncome,
-        state,
-        level
-      );
-      
-      if (building.isRepaired()) {
-        // Setup click handler for repaired buildings
-        building.getSprite().on('pointerdown', () => {
-          if (building.getType() === BuildingType.COOKIE_BAKERY) {
-            this.openCookieShop();
-          } else {
-            this.buildingInfoPanel.show(building);
-          }
-        });
-        
-        // Add to grid
-        this.gridSystem.addBuilding(building);
-        this.economy.addBuilding(building);
-      } else {
-        // For broken buildings, set click handler on the repair button
-        building.setRepairClickHandler(() => {
-          this.attemptRepair(building, spot);
-        });
-        // Update the repair prompt with current coins
-        building.updateRepairPrompt(this.economy.getCoins());
-      }
-      
-      this.buildings.set(spot.id, building);
-    });
+  private requestNewTreeSpot() {
+    const position = this.findPlacementPosition('tree');
+    if (!position) {
+      const px = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
+      const py = this.player ? this.player.sprite.y : WORLD_HEIGHT / 2;
+      this.uiManager.showFloatingText(px, py - 60, 'No space for a tree nearby!', '#ff6347');
+      return;
+    }
+    const cost = this.getNextTreeSpotCost();
+    const spot: TreeSpot = {
+      id: `tree_${Date.now()}`,
+      x: position.x,
+      y: position.y,
+      unlockOrder: this.treeSpots.length + 1,
+      planted: false,
+      cost
+    };
+    this.treeSpots.push(spot);
+    this.spawnTreeSpot(spot);
+    this.updateUI();
+    this.uiManager.showFloatingText(position.x, position.y - 60, 'New tree plot!', '#90EE90');
   }
+
+  private requestNewBuildingSpot() {
+    const position = this.findPlacementPosition('building');
+    if (!position) {
+      const px = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
+      const py = this.player ? this.player.sprite.y : WORLD_HEIGHT / 2;
+      this.uiManager.showFloatingText(px, py - 60, 'No space for a building!', '#ff6347');
+      return;
+    }
+    const type = this.getNextBuildingType();
+    const spot: BuildingSpot = {
+      id: `building_${Date.now()}`,
+      type,
+      x: position.x,
+      y: position.y,
+      unlockOrder: this.buildingSpots.length + 1,
+      repaired: false
+    };
+    this.buildingSpots.push(spot);
+    this.spawnBuildingFromSpot(spot);
+    this.updateUI();
+    this.uiManager.showFloatingText(position.x, position.y - 60, `${BUILDING_DATA[type].name} plot added!`, '#ffd700');
+  }
+
+  private createBuildings() {
+    this.buildingSpots.forEach(spot => this.spawnBuildingFromSpot(spot));
+  }
+
+  private spawnBuildingFromSpot(spot: BuildingSpot) {
+    const existing = this.buildings.get(spot.id);
+    if (existing) {
+      existing.destroy();
+      this.buildings.delete(spot.id);
+    }
+
+    const data = BUILDING_DATA[spot.type];
+    const state = spot.repaired ? BuildingState.ACTIVE : BuildingState.BROKEN;
+    const level = this.buildingLevels.get(spot.id) || 1;
+    
+    const building = new Building(
+      this,
+      spot.id,
+      spot.x,
+      spot.y,
+      spot.type,
+      data.baseIncome,
+      state,
+      level
+    );
+    
+    if (building.isRepaired()) {
+      building.getSprite().on('pointerdown', () => {
+        if (building.getType() === BuildingType.COOKIE_BAKERY) {
+          this.openCookieShop();
+        } else {
+          this.buildingInfoPanel.show(building);
+        }
+      });
+      
+      this.gridSystem.addBuilding(building);
+      this.economy.addBuilding(building);
+    } else {
+      building.setRepairClickHandler(() => {
+        this.attemptRepair(building, spot);
+      });
+      building.updateRepairPrompt(this.economy.getCoins());
+    }
+    
+    this.buildings.set(spot.id, building);
+  }
+
 
   private attemptRepair(building: Building, spot: BuildingSpot) {
     const cost = building.getRepairCost();
@@ -533,7 +587,69 @@ export class GameScene extends Phaser.Scene {
     }, this);
   }
 
-  private saveGame() {
+  private getNextTreeSpotCost(): number {
+    const index = this.treeSpots.length;
+    return Math.max(150, Math.floor(150 * Math.pow(1.18, index)));
+  }
+
+  private getNextBuildingType(): BuildingType {
+    const type = BUILDING_SEQUENCE[this.nextBuildingSequenceIndex % BUILDING_SEQUENCE.length];
+    this.nextBuildingSequenceIndex = (this.nextBuildingSequenceIndex + 1) % BUILDING_SEQUENCE.length;
+    return type;
+  }
+
+  private findPlacementPosition(kind: 'tree' | 'building'): { x: number; y: number } | null {
+    const cell = this.gridSystem.getCellSize();
+    const originX = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
+    const originY = this.player ? this.player.sprite.y : WORLD_HEIGHT / 2;
+    const startCellX = Math.round((originX - cell / 2) / cell);
+    const startCellY = Math.round((originY - cell / 2) / cell);
+    const maxRadius = 40;
+
+    for (let radius = 0; radius <= maxRadius; radius++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          const gridX = startCellX + dx;
+          const gridY = startCellY + dy;
+          const worldX = gridX * cell + cell / 2;
+          const worldY = gridY * cell + cell / 2;
+          if (!this.isWithinWorld(worldX, worldY)) continue;
+          if (this.isSpotFree(worldX, worldY, kind)) {
+            return { x: worldX, y: worldY };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  private isWithinWorld(x: number, y: number): boolean {
+    const margin = this.gridSystem.getCellSize() / 2;
+    return x >= margin && x <= WORLD_WIDTH - margin && y >= margin && y <= WORLD_HEIGHT - margin;
+  }
+
+  private isSpotFree(x: number, y: number, kind: 'tree' | 'building'): boolean {
+    const cell = this.gridSystem.getCellSize();
+    const treeBuffer = kind === 'tree' ? cell : cell * 1.2;
+    const buildingBuffer = kind === 'tree' ? cell * 1.4 : cell * 2;
+
+    for (const spot of this.treeSpots) {
+      if (Phaser.Math.Distance.Between(spot.x, spot.y, x, y) < treeBuffer) {
+        return false;
+      }
+    }
+
+    for (const spot of this.buildingSpots) {
+      if (Phaser.Math.Distance.Between(spot.x, spot.y, x, y) < buildingBuffer) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+ 
+   private saveGame() {
+
     const saveData: any = {
       coins: this.economy.getCoins(),
       buildings: this.buildingSpots
@@ -549,6 +665,26 @@ export class GameScene extends Phaser.Scene {
             spotId: spot.id
           };
         }),
+      buildingSpotsState: this.buildingSpots.map(spot => {
+        const building = this.buildings.get(spot.id);
+        return {
+          id: spot.id,
+          type: spot.type,
+          x: spot.x,
+          y: spot.y,
+          unlockOrder: spot.unlockOrder,
+          repaired: spot.repaired,
+          level: building ? building.getLevel() : 1
+        };
+      }),
+      treeSpotsState: this.treeSpots.map(spot => ({
+        id: spot.id,
+        x: spot.x,
+        y: spot.y,
+        cost: spot.cost,
+        unlockOrder: spot.unlockOrder,
+        planted: spot.planted
+      })),
       trees: this.treeSpots
         .filter(spot => spot.planted)
         .map(spot => ({
@@ -559,7 +695,8 @@ export class GameScene extends Phaser.Scene {
       research: this.researchSystem.getSaveData(),
       buffs: this.buffSystem.getSaveData(),
       totalEarned: this.economy.getTotalEarned(),
-      lastSaveTime: Date.now()
+      lastSaveTime: Date.now(),
+      nextBuildingSeqIndex: this.nextBuildingSequenceIndex
     };
     
     SaveManager.save(saveData);
@@ -586,36 +723,59 @@ export class GameScene extends Phaser.Scene {
       }
       
       // Initialize building spots from save
-      this.buildingSpots = WorkshopLayout.getInitialBuildingSpots();
-      this.treeSpots = WorkshopLayout.getInitialTreeSpots();
-      
-      // Mark repaired buildings
-      saveData.buildings.forEach(buildingData => {
-        const spot = this.buildingSpots.find(s => 
-          (buildingData as any).spotId ? s.id === (buildingData as any).spotId : 
-          (s.type === buildingData.type && s.x === buildingData.x && s.y === buildingData.y)
+      if ((saveData as any).buildingSpotsState) {
+        this.buildingSpots = (saveData as any).buildingSpotsState.map((spotData: any) => ({
+          id: spotData.id,
+          type: spotData.type as BuildingType,
+          x: spotData.x,
+          y: spotData.y,
+          unlockOrder: spotData.unlockOrder ?? 0,
+          repaired: spotData.repaired ?? false
+        }));
+        this.buildingLevels = new Map(
+          (saveData as any).buildingSpotsState.map((spotData: any) => [spotData.id, spotData.level || 1])
         );
-        if (spot) {
-          spot.repaired = true;
-        }
-      });
+      } else {
+        this.buildingSpots = WorkshopLayout.getInitialBuildingSpots();
+        // Mark repaired buildings from legacy saves
+        saveData.buildings.forEach(buildingData => {
+          const spot = this.buildingSpots.find(s => 
+            (buildingData as any).spotId ? s.id === (buildingData as any).spotId : 
+            (s.type === buildingData.type && s.x === buildingData.x && s.y === buildingData.y)
+          );
+          if (spot) {
+            spot.repaired = true;
+          }
+        });
+        this.buildingLevels = new Map(
+          saveData.buildings.map(b => [
+            (b as any).spotId || `${b.type}_${b.x}_${b.y}`,
+            b.level
+          ])
+        );
+      }
       
-      // Mark planted trees (from save data if available)
-      const savedTrees = (saveData as any).trees || [];
-      savedTrees.forEach((treeData: any) => {
-        const spot = this.treeSpots.find(s => s.id === treeData.spotId);
-        if (spot) {
-          spot.planted = true;
-        }
-      });
+      if ((saveData as any).treeSpotsState) {
+        this.treeSpots = (saveData as any).treeSpotsState.map((treeData: any) => ({
+          id: treeData.id,
+          x: treeData.x,
+          y: treeData.y,
+          unlockOrder: treeData.unlockOrder ?? 0,
+          planted: treeData.planted ?? false,
+          cost: treeData.cost ?? 100
+        }));
+      } else {
+        this.treeSpots = WorkshopLayout.getInitialTreeSpots();
+        const savedTrees = (saveData as any).trees || [];
+        savedTrees.forEach((treeData: any) => {
+          const spot = this.treeSpots.find(s => s.id === treeData.spotId);
+          if (spot) {
+            spot.planted = true;
+          }
+        });
+      }
       
-      // Store levels for restoration
-      this.buildingLevels = new Map(
-        saveData.buildings.map(b => [
-          (b as any).spotId || `${b.type}_${b.x}_${b.y}`,
-          b.level
-        ])
-      );
+      this.nextBuildingSequenceIndex = (saveData as any).nextBuildingSeqIndex ?? (this.buildingSpots.length % BUILDING_SEQUENCE.length);
       
       // Load research data
       if (saveData.research) {
@@ -632,11 +792,13 @@ export class GameScene extends Phaser.Scene {
         SaveManager.clear();
         this.buildingSpots = WorkshopLayout.getInitialBuildingSpots();
         this.treeSpots = WorkshopLayout.getInitialTreeSpots();
+        this.nextBuildingSequenceIndex = this.buildingSpots.length % BUILDING_SEQUENCE.length;
       }
     } else {
       // Fresh start
       this.buildingSpots = WorkshopLayout.getInitialBuildingSpots();
       this.treeSpots = WorkshopLayout.getInitialTreeSpots();
+      this.nextBuildingSequenceIndex = this.buildingSpots.length % BUILDING_SEQUENCE.length;
     }
   }
 

@@ -16,7 +16,9 @@ export class UIManager {
     income: number,
     buildingCount: number,
     onSave: () => void,
-    onReset: () => void
+    onReset: () => void,
+    onAddTreeSpot?: () => void,
+    onAddBuildingSpot?: () => void
   ) {
     const uiBackground = this.scene.add.rectangle(10, 10, 280, 110, 0x2d5016, 0.9);
     uiBackground.setOrigin(0, 0);
@@ -42,7 +44,7 @@ export class UIManager {
     this.incomeText.setDepth(51);
     this.incomeText.setScrollFactor(0);
     
-    this.buildingsCountText = this.scene.add.text(20, 85, `Buildings: ${buildingCount}/10`, {
+    this.buildingsCountText = this.scene.add.text(20, 85, `Buildings: ${buildingCount}`, {
       fontSize: '18px',
       color: '#ffffff',
       stroke: '#000000',
@@ -62,7 +64,7 @@ export class UIManager {
     this.researchPointsText.setDepth(51);
     this.researchPointsText.setScrollFactor(0);
     
-    const instructions = this.scene.add.text(512, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Press R: Open Research Lab', {
+    const instructions = this.scene.add.text(512, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Press R: Research | Use Add Buttons to place more', {
       fontSize: '16px',
       color: '#2d5016',
       backgroundColor: '#ffffff',
@@ -100,6 +102,36 @@ export class UIManager {
     resetBtn.on('pointerdown', () => {
       this.showResetConfirmation(onReset);
     });
+    
+    if (onAddTreeSpot) {
+      const addTreeBtn = this.scene.add.text(700, 20, '🌲 Add Tree Spot', {
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#3c7526',
+        padding: { x: 10, y: 5 }
+      });
+      addTreeBtn.setDepth(51);
+      addTreeBtn.setScrollFactor(0);
+      addTreeBtn.setInteractive({ useHandCursor: true });
+      addTreeBtn.on('pointerdown', () => {
+        onAddTreeSpot();
+      });
+    }
+    
+    if (onAddBuildingSpot) {
+      const addBuildingBtn = this.scene.add.text(700, 60, '🏗️ Add Building Plot', {
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#5b3d1f',
+        padding: { x: 10, y: 5 }
+      });
+      addBuildingBtn.setDepth(51);
+      addBuildingBtn.setScrollFactor(0);
+      addBuildingBtn.setInteractive({ useHandCursor: true });
+      addBuildingBtn.on('pointerdown', () => {
+        onAddBuildingSpot();
+      });
+    }
   }
 
   private showResetConfirmation(onConfirm: () => void) {
@@ -196,7 +228,7 @@ export class UIManager {
   }
 
   updateBuildingCount(count: number) {
-    this.buildingsCountText.setText(`Buildings: ${count}/11`);
+    this.buildingsCountText.setText(`Buildings: ${count}`);
   }
 
   updateResearchPoints(points: number) {
