@@ -21,6 +21,8 @@ import { EnvironmentRenderer } from '../rendering/EnvironmentRenderer';
 
 const WORLD_WIDTH = 4096;
 const WORLD_HEIGHT = 3072;
+const WORLD_CENTER_X = WORLD_WIDTH / 2;
+const WORLD_CENTER_Y = WORLD_HEIGHT / 2;
 
 export class GameScene extends Phaser.Scene {
 
@@ -99,8 +101,8 @@ export class GameScene extends Phaser.Scene {
     // Create all building spots (broken and active)
     this.createBuildings();
     
-    // Create player
-    this.player = new Player(this, 512, 384);
+    // Create player near world center for balanced expansion
+    this.player = new Player(this, WORLD_CENTER_X, WORLD_CENTER_Y);
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.startFollow(this.player.sprite, true, 0.08, 0.08);
     this.cameras.main.setBackgroundColor(0x1b3b5a);
@@ -201,8 +203,8 @@ export class GameScene extends Phaser.Scene {
 
     const starterTree: TreeSpot = {
       id: 'starter_tree',
-      x: 420,
-      y: 320,
+      x: WORLD_CENTER_X - 160,
+      y: WORLD_CENTER_Y,
       unlockOrder: 1,
       planted: true,
       cost: 0
