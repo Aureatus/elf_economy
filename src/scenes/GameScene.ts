@@ -190,10 +190,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createTrees() {
+    this.ensureStarterTreePresence();
     this.treeSpots.forEach(spot => this.spawnTreeSpot(spot));
   }
+ 
+  private ensureStarterTreePresence() {
+    if (this.treeSpots.some(spot => spot.planted)) {
+      return;
+    }
 
+    const starterTree: TreeSpot = {
+      id: 'starter_tree',
+      x: 420,
+      y: 320,
+      unlockOrder: 1,
+      planted: true,
+      cost: 0
+    };
+    this.treeSpots.push(starterTree);
+  }
+ 
   private spawnTreeSpot(spot: TreeSpot) {
+
     if (spot.planted) {
       const existing = this.trees.get(spot.id);
       if (existing) {
@@ -295,6 +313,10 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const cost = this.getNextTreeSpotCost();
+    if (!this.economy.spendCoins(cost)) {
+      this.uiManager.showFloatingText(position.x, position.y - 60, `Need ${cost} coins!`, '#ff6347');
+      return;
+    }
     const spot: TreeSpot = {
       id: `tree_${Date.now()}`,
       x: position.x,
@@ -306,9 +328,10 @@ export class GameScene extends Phaser.Scene {
     this.treeSpots.push(spot);
     this.spawnTreeSpot(spot);
     this.updateUI();
+    this.uiManager.updateCoins(this.economy.getCoins());
     this.uiManager.showFloatingText(position.x, position.y - 60, 'New tree plot!', '#90EE90');
   }
-
+ 
   private requestNewBuildingSpot() {
     const position = this.findPlacementPosition('building');
     if (!position) {
@@ -318,6 +341,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const type = this.getNextBuildingType();
+    const cost = this.getBuildingPlotCost(type);
+    if (!this.economy.spendCoins(cost)) {
+      this.uiManager.showFloatingText(position.x, position.y - 60, `Need ${cost} coins!`, '#ff6347');
+      return;
+    }
     const spot: BuildingSpot = {
       id: `building_${Date.now()}`,
       type,
@@ -329,8 +357,10 @@ export class GameScene extends Phaser.Scene {
     this.buildingSpots.push(spot);
     this.spawnBuildingFromSpot(spot);
     this.updateUI();
+    this.uiManager.updateCoins(this.economy.getCoins());
     this.uiManager.showFloatingText(position.x, position.y - 60, `${BUILDING_DATA[type].name} plot added!`, '#ffd700');
   }
+
 
   private createBuildings() {
     this.buildingSpots.forEach(spot => this.spawnBuildingFromSpot(spot));
@@ -598,7 +628,13 @@ export class GameScene extends Phaser.Scene {
     return type;
   }
 
+  private getBuildingPlotCost(type: BuildingType): number {
+    const base = BUILDING_DATA[type].baseCost;
+    return Math.max(250, Math.floor(base * 0.75) + (this.buildingSpots.length * 25));
+  }
+ 
   private findPlacementPosition(kind: 'tree' | 'building'): { x: number; y: number } | null {
+
     const cell = this.gridSystem.getCellSize();
     const originX = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
     const originY = this.player ? this.player.sprite.y : WORLD_HEIGHT / 2;
