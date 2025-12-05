@@ -126,7 +126,7 @@ export class UIManager {
       addTreeBtn.setInteractive({ useHandCursor: true });
       addTreeBtn.on('pointerdown', () => onAddTreeSpot());
 
-      const addTreeLabel = this.scene.add.text(screenWidth - 360, 35, '🌲 Add Tree Spot', {
+      const addTreeLabel = this.scene.add.text(screenWidth - 360, 35, '🌲 Add Tree', {
         fontSize: '16px',
         color: '#ffffff',
         fontStyle: 'bold'
@@ -144,7 +144,7 @@ export class UIManager {
       addBuildingBtn.setInteractive({ useHandCursor: true });
       addBuildingBtn.on('pointerdown', () => onAddBuildingSpot());
 
-      const addBuildingLabel = this.scene.add.text(screenWidth - 360, 75, '🏗️ Add Building Plot', {
+      const addBuildingLabel = this.scene.add.text(screenWidth - 360, 75, '🏗️ Add Building', {
         fontSize: '16px',
         color: '#ffffff',
         fontStyle: 'bold'
