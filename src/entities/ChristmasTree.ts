@@ -242,6 +242,10 @@ export class ChristmasTree {
     }
   }
 
+  getPosition() {
+    return { x: this.x, y: this.y };
+  }
+
   applyResearchEffects(effects: TreeResearchEffects) {
     const newCoinValue = Math.max(1, Math.floor(this.baseCoinValue * effects.coinValueMultiplier));
     const newCooldown = Math.max(400, Math.floor(this.baseMaxCooldown * effects.cooldownMultiplier));
@@ -255,8 +259,9 @@ export class ChristmasTree {
       this.cooldown = this.maxCooldown;
     }
   }
+ 
+   destroy() {
 
-  destroy() {
     if (this.sprite) this.sprite.destroy();
     if (this.promptText) this.promptText.destroy();
     if (this.cooldownBar) this.cooldownBar.destroy();

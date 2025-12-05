@@ -18,6 +18,7 @@ import { GridSystem } from '../systems/GridSystem';
 import { DecorationSystem } from '../systems/DecorationSystem';
 import { AssetCreator } from '../utils/AssetCreator';
 import { EnvironmentRenderer } from '../rendering/EnvironmentRenderer';
+import { MiniMap } from '../ui/MiniMap';
 
 const WORLD_WIDTH = 4096;
 const WORLD_HEIGHT = 3072;
@@ -60,6 +61,7 @@ export class GameScene extends Phaser.Scene {
   
   // Environment
   private environmentRenderer!: EnvironmentRenderer;
+  private miniMap!: MiniMap;
   
   private magnetActiveLastFrame: boolean = false;
   
@@ -157,6 +159,8 @@ export class GameScene extends Phaser.Scene {
       (type, cost) => this.onCookiePurchased(type, cost),
       () => this.onCookieShopClosed()
     );
+
+    this.miniMap = new MiniMap(this, WORLD_WIDTH, WORLD_HEIGHT);
     
     // Create trees and planting spots
     this.createTrees();
@@ -189,6 +193,10 @@ export class GameScene extends Phaser.Scene {
       this.resetMagnetizedCoins();
     }
     this.magnetActiveLastFrame = magnetActive;
+
+    if (this.miniMap) {
+      this.miniMap.update(this.player.sprite, this.trees, this.buildings);
+    }
   }
 
   private createTrees() {
