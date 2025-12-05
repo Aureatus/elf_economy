@@ -17,21 +17,25 @@ export class ChristmasTree {
   private cooldownBar?: Phaser.GameObjects.Graphics;
   private promptText?: Phaser.GameObjects.Text;
   private onCoinDrop: (x: number, y: number, value: number) => void;
+  private onShake?: () => void;
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
-    onCoinDrop: (x: number, y: number, value: number) => void
+    onCoinDrop: (x: number, y: number, value: number) => void,
+    onShake?: () => void
   ) {
     this.scene = scene;
     this.x = x;
     this.y = y;
     this.onCoinDrop = onCoinDrop;
+    this.onShake = onShake;
 
     this.createTree();
     this.createPrompt();
     this.createCooldownBar();
+
   }
 
   private createTree() {
@@ -152,11 +156,16 @@ export class ChristmasTree {
   private shake() {
     if (this.cooldown > 0) return; // Still on cooldown
 
+    if (this.onShake) {
+      this.onShake();
+    }
+
     // Start cooldown
     this.cooldown = this.maxCooldown;
 
     // Hide prompt during cooldown
     if (this.promptText) {
+
       this.promptText.setVisible(false);
     }
 

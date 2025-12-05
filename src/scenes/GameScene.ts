@@ -71,13 +71,33 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     AssetCreator.createAllAssets(this);
+    this.loadAudioAssets();
+  }
+
+  private loadAudioAssets() {
+    const audioFiles: Array<[string, string]> = [
+      ['christmas_bg', 'festive_bg.wav'],
+      ['coin_collect', 'coin_collect.wav'],
+      ['building_repair', 'building_repair.wav'],
+      ['building_upgrade', 'building_upgrade.wav'],
+      ['tree_shake', 'tree_shake.wav'],
+      ['ui_click', 'ui_click.wav'],
+      ['research_complete', 'research_complete.wav'],
+      ['cookie_purchase', 'cookie_purchase.wav']
+    ];
+
+    audioFiles.forEach(([key, file]) => {
+      this.load.audio(key, `audio/${file}`);
+    });
   }
 
   create() {
     console.log('GameScene: create() started');
-    
+
     // Initialize systems
     this.economy = new EconomySystem(0);
+
+
     this.audioManager = new AudioManager(this);
     this.researchSystem = new ResearchSystem();
     this.buffSystem = new BuffSystem(this);
@@ -236,7 +256,8 @@ export class GameScene extends Phaser.Scene {
         this,
         spot.x,
         spot.y,
-        (x, y, value) => this.spawnCoinAt(x, y, value)
+        (x, y, value) => this.spawnCoinAt(x, y, value),
+        () => this.audioManager.playTreeShakeSound()
       );
       this.trees.set(spot.id, tree);
       tree.applyResearchEffects(this.researchSystem.getTreeResearchEffects());
@@ -319,6 +340,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private requestNewTreeSpot() {
+    this.audioManager.playUIClickSound();
     const position = this.findPlacementPosition('tree');
     if (!position) {
       const px = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
@@ -347,6 +369,7 @@ export class GameScene extends Phaser.Scene {
   }
  
   private requestNewBuildingSpot() {
+    this.audioManager.playUIClickSound();
     const position = this.findPlacementPosition('building');
     if (!position) {
       const px = this.player ? this.player.sprite.x : WORLD_WIDTH / 2;
@@ -909,7 +932,7 @@ export class GameScene extends Phaser.Scene {
       this.researchSystem.unlockUpgradeLevel(upgrade.id);
       this.updateUI();
       this.uiManager.showFloatingText(512, 200, 'Research Complete!', '#90EE90');
-      this.audioManager.playBuildingUpgradeSound();
+      this.audioManager.playResearchCompleteSound();
       
       // Refresh panel
       this.researchPanel.refresh(this.economy.getCoins());
@@ -934,6 +957,7 @@ export class GameScene extends Phaser.Scene {
       this.buffSystem.consumeCookie(type);
       this.updateUI();
       this.uiManager.showFloatingText(512, 200, 'Cookie Fed!', '#8b4513');
+      this.audioManager.playCookiePurchaseSound();
     }
   }
 
