@@ -615,12 +615,22 @@ export class GameScene extends Phaser.Scene {
       }
 
       if (distance <= magnetRange) {
-        this.physics.moveToObject(coinObj, playerSprite, magnetSpeed);
+        this.tweens.killTweensOf(coinObj);
+        const body = coinObj.body as Phaser.Physics.Arcade.Body | null;
+        if (body) {
+          const direction = new Phaser.Math.Vector2(playerSprite.x - coinObj.x, playerSprite.y - coinObj.y);
+          direction.normalize();
+          body.setVelocity(direction.x * magnetSpeed, direction.y * magnetSpeed);
+        } else {
+          this.physics.moveToObject(coinObj, playerSprite, magnetSpeed);
+        }
       }
 
       return true;
     }, this);
   }
+
+
 
   private resetMagnetizedCoins() {
     if (!this.coinGroup) return;
