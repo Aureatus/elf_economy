@@ -332,14 +332,14 @@ export class GameScene extends Phaser.Scene {
       x: position.x,
       y: position.y,
       unlockOrder: this.treeSpots.length + 1,
-      planted: false,
-      cost
+      planted: true,
+      cost: 0
     };
     this.treeSpots.push(spot);
     this.spawnTreeSpot(spot);
     this.updateUI();
     this.uiManager.updateCoins(this.economy.getCoins());
-    this.uiManager.showFloatingText(position.x, position.y - 60, 'New tree plot!', '#90EE90');
+    this.uiManager.showFloatingText(position.x, position.y - 60, 'Tree planted!', '#90EE90');
   }
  
   private requestNewBuildingSpot() {
@@ -362,13 +362,13 @@ export class GameScene extends Phaser.Scene {
       x: position.x,
       y: position.y,
       unlockOrder: this.buildingSpots.length + 1,
-      repaired: false
+      repaired: true
     };
     this.buildingSpots.push(spot);
     this.spawnBuildingFromSpot(spot);
     this.updateUI();
     this.uiManager.updateCoins(this.economy.getCoins());
-    this.uiManager.showFloatingText(position.x, position.y - 60, `${BUILDING_DATA[type].name} plot added!`, '#ffd700');
+    this.uiManager.showFloatingText(position.x, position.y - 60, `${BUILDING_DATA[type].name} ready!`, '#ffd700');
   }
 
 
