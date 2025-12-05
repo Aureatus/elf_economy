@@ -20,6 +20,8 @@ export class UIManager {
     onAddTreeSpot?: () => void,
     onAddBuildingSpot?: () => void
   ) {
+    const screenWidth = this.scene.scale.width;
+
     const uiBackground = this.scene.add.rectangle(10, 10, 280, 110, 0x2d5016, 0.9);
     uiBackground.setOrigin(0, 0);
     uiBackground.setDepth(50);
@@ -64,7 +66,7 @@ export class UIManager {
     this.researchPointsText.setDepth(51);
     this.researchPointsText.setScrollFactor(0);
     
-    const instructions = this.scene.add.text(512, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Press R: Research | Use Add Buttons to place more', {
+    const instructions = this.scene.add.text(screenWidth / 2, 745, 'WASD: Move | Click Tree: Get Coins | Click Buildings: Repair/Upgrade | Press R: Research | Use Add Buttons to place more', {
       fontSize: '16px',
       color: '#2d5016',
       backgroundColor: '#ffffff',
@@ -75,7 +77,7 @@ export class UIManager {
     instructions.setScrollFactor(0);
     
     // Save button
-    const saveBtn = this.scene.add.text(900, 20, '💾 Save', {
+    const saveBtn = this.scene.add.text(screenWidth - 140, 20, '💾 Save', {
       fontSize: '20px',
       color: '#ffffff',
       backgroundColor: '#2d5016',
@@ -90,7 +92,7 @@ export class UIManager {
     });
     
     // Reset button
-    const resetBtn = this.scene.add.text(900, 60, '🔄 Reset', {
+    const resetBtn = this.scene.add.text(screenWidth - 140, 60, '🔄 Reset', {
       fontSize: '20px',
       color: '#ffffff',
       backgroundColor: '#c41e3a',
@@ -104,7 +106,7 @@ export class UIManager {
     });
     
     if (onAddTreeSpot) {
-      const addTreeBtn = this.scene.add.text(700, 20, '🌲 Add Tree Spot', {
+      const addTreeBtn = this.scene.add.text(screenWidth - 360, 20, '🌲 Add Tree Spot', {
         fontSize: '18px',
         color: '#ffffff',
         backgroundColor: '#3c7526',
@@ -119,7 +121,7 @@ export class UIManager {
     }
     
     if (onAddBuildingSpot) {
-      const addBuildingBtn = this.scene.add.text(700, 60, '🏗️ Add Building Plot', {
+      const addBuildingBtn = this.scene.add.text(screenWidth - 360, 60, '🏗️ Add Building Plot', {
         fontSize: '18px',
         color: '#ffffff',
         backgroundColor: '#5b3d1f',
