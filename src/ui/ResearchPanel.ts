@@ -48,8 +48,10 @@ export class ResearchPanel {
 
   private createPanel(currentCoins: number) {
     // Create main panel
-    this.panel = this.scene.add.container(512, 384);
+    const { width, height } = this.scene.scale;
+    this.panel = this.scene.add.container(width / 2, height / 2);
     this.panel.setDepth(100);
+    this.panel.setScrollFactor(0);
 
     // Background
     const bg = this.scene.add.rectangle(0, 0, 600, 500, 0x2d5016, 0.95);
