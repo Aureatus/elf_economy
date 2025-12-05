@@ -591,7 +591,15 @@ export class GameScene extends Phaser.Scene {
   private finalizeCoinCollection(coinObj: Coin) {
     if (!coinObj.active) return;
 
+    coinObj.setActive(false);
+    const body = coinObj.body as Phaser.Physics.Arcade.Body | null;
+    if (body) {
+      body.enable = false;
+      body.setVelocity(0, 0);
+    }
+ 
     let value = coinObj.getValue();
+
     
     // Apply gift wrapping multiplier if station is active
     const hasGiftWrapping = this.economy.getBuildings().some(b => 

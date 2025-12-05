@@ -1,7 +1,9 @@
+import * as Phaser from 'phaser';
+
 export class AudioManager {
   private scene: Phaser.Scene;
-  private musicVolume: number = 0.3;
-  private sfxVolume: number = 0.5;
+  private musicVolume: number = 0.12;
+  private sfxVolume: number = 0.25;
   private bgMusic?: Phaser.Sound.BaseSound;
 
   constructor(scene: Phaser.Scene) {
@@ -12,25 +14,29 @@ export class AudioManager {
     this.playMusic('christmas_bg', true);
   }
 
-  playMusic(key: string, loop: boolean = true): void {
+  private playMusic(key: string, loop: boolean = true): void {
     if (this.bgMusic) {
       this.bgMusic.stop();
     }
-    
-    if (this.scene.sound.get(key)) {
-      this.bgMusic = this.scene.sound.add(key, { 
-        loop, 
-        volume: this.musicVolume 
+
+    try {
+      this.bgMusic = this.scene.sound.add(key, {
+        loop,
+        volume: this.musicVolume
       });
       this.bgMusic.play();
+    } catch (error) {
+      console.warn(`Missing music track: ${key}`, error);
     }
   }
 
-  playSFX(key: string, volume?: number): void {
-    if (this.scene.sound.get(key)) {
-      this.scene.sound.play(key, { 
-        volume: volume !== undefined ? volume : this.sfxVolume 
+  private playSFX(key: string, volume?: number): void {
+    try {
+      this.scene.sound.play(key, {
+        volume: volume !== undefined ? volume : this.sfxVolume
       });
+    } catch (error) {
+      console.warn(`Missing SFX: ${key}`, error);
     }
   }
 
@@ -51,32 +57,31 @@ export class AudioManager {
     this.sfxVolume = Phaser.Math.Clamp(volume, 0, 1);
   }
 
-  // Enhanced sound effects
   playCoinCollectSound() {
-    this.playSFX('coin_collect', 0.6);
+    this.playSFX('coin_collect', 0.2);
   }
 
   playBuildingRepairSound() {
-    this.playSFX('building_repair', 0.7);
+    this.playSFX('building_repair', 0.2);
   }
 
   playBuildingUpgradeSound() {
-    this.playSFX('building_upgrade', 0.8);
+    this.playSFX('building_upgrade', 0.22);
   }
 
   playTreeShakeSound() {
-    this.playSFX('tree_shake', 0.5);
+    this.playSFX('tree_shake', 0.18);
   }
 
   playUIClickSound() {
-    this.playSFX('ui_click', 0.4);
+    this.playSFX('ui_click', 0.15);
   }
 
   playResearchCompleteSound() {
-    this.playSFX('research_complete', 0.9);
+    this.playSFX('research_complete', 0.22);
   }
 
   playCookiePurchaseSound() {
-    this.playSFX('cookie_purchase', 0.6);
+    this.playSFX('cookie_purchase', 0.18);
   }
 }
