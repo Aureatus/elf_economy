@@ -77,62 +77,75 @@ export class UIManager {
     instructions.setScrollFactor(0);
     
     // Save button
-    const saveBtn = this.scene.add.text(screenWidth - 140, 20, '💾 Save', {
-      fontSize: '20px',
-      color: '#ffffff',
-      backgroundColor: '#2d5016',
-      padding: { x: 10, y: 5 }
-    });
+    const saveBtn = this.scene.add.rectangle(screenWidth - 110, 35, 140, 35, 0x2d5016, 0.9);
+    saveBtn.setStrokeStyle(2, 0x173013);
     saveBtn.setDepth(51);
     saveBtn.setScrollFactor(0);
     saveBtn.setInteractive({ useHandCursor: true });
     saveBtn.on('pointerdown', () => {
       onSave();
-      this.showFloatingText(saveBtn.x, saveBtn.y + 30, 'Saved!', '#90EE90');
+      this.showFloatingText(saveBtn.x, saveBtn.y + 20, 'Saved!', '#90EE90');
     });
+
+    const saveLabel = this.scene.add.text(screenWidth - 110, 35, '💾 Save', {
+      fontSize: '18px',
+      color: '#ffffff'
+    });
+    saveLabel.setOrigin(0.5);
+    saveLabel.setDepth(52);
+    saveLabel.setScrollFactor(0);
     
-    // Reset button
-    const resetBtn = this.scene.add.text(screenWidth - 140, 60, '🔄 Reset', {
-      fontSize: '20px',
-      color: '#ffffff',
-      backgroundColor: '#c41e3a',
-      padding: { x: 10, y: 5 }
-    });
+    const resetBtn = this.scene.add.rectangle(screenWidth - 110, 75, 140, 35, 0xc41e3a, 0.9);
+    resetBtn.setStrokeStyle(2, 0x701c24);
     resetBtn.setDepth(51);
     resetBtn.setScrollFactor(0);
     resetBtn.setInteractive({ useHandCursor: true });
     resetBtn.on('pointerdown', () => {
       this.showResetConfirmation(onReset);
     });
+
+    const resetLabel = this.scene.add.text(screenWidth - 110, 75, '🔄 Reset', {
+      fontSize: '18px',
+      color: '#ffffff'
+    });
+    resetLabel.setOrigin(0.5);
+    resetLabel.setDepth(52);
+    resetLabel.setScrollFactor(0);
     
     if (onAddTreeSpot) {
-      const addTreeBtn = this.scene.add.text(screenWidth - 360, 20, '🌲 Add Tree Spot', {
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#3c7526',
-        padding: { x: 10, y: 5 }
-      });
+      const addTreeBtn = this.scene.add.rectangle(screenWidth - 360, 35, 170, 35, 0x3c7526, 0.9);
+      addTreeBtn.setStrokeStyle(2, 0x1a3d14);
       addTreeBtn.setDepth(51);
       addTreeBtn.setScrollFactor(0);
       addTreeBtn.setInteractive({ useHandCursor: true });
-      addTreeBtn.on('pointerdown', () => {
-        onAddTreeSpot();
+      addTreeBtn.on('pointerdown', () => onAddTreeSpot());
+
+      const addTreeLabel = this.scene.add.text(screenWidth - 360, 35, '🌲 Add Tree Spot', {
+        fontSize: '16px',
+        color: '#ffffff',
+        fontStyle: 'bold'
       });
+      addTreeLabel.setOrigin(0.5);
+      addTreeLabel.setDepth(52);
+      addTreeLabel.setScrollFactor(0);
     }
     
     if (onAddBuildingSpot) {
-      const addBuildingBtn = this.scene.add.text(screenWidth - 360, 60, '🏗️ Add Building Plot', {
-        fontSize: '18px',
-        color: '#ffffff',
-        backgroundColor: '#5b3d1f',
-        padding: { x: 10, y: 5 }
-      });
+      const addBuildingBtn = this.scene.add.rectangle(screenWidth - 360, 75, 170, 35, 0x5b3d1f, 0.9);
+      addBuildingBtn.setStrokeStyle(2, 0x2d1f0d);
       addBuildingBtn.setDepth(51);
       addBuildingBtn.setScrollFactor(0);
       addBuildingBtn.setInteractive({ useHandCursor: true });
-      addBuildingBtn.on('pointerdown', () => {
-        onAddBuildingSpot();
+      addBuildingBtn.on('pointerdown', () => onAddBuildingSpot());
+
+      const addBuildingLabel = this.scene.add.text(screenWidth - 360, 75, '🏗️ Add Building Plot', {
+        fontSize: '16px',
+        color: '#ffffff',
+        fontStyle: 'bold'
       });
+      addBuildingLabel.setOrigin(0.5);
+      addBuildingLabel.setDepth(52);
+      addBuildingLabel.setScrollFactor(0);
     }
   }
 
